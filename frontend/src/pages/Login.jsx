@@ -1,0 +1,62 @@
+import React, { useState } from 'react'
+import { Link } from 'react-router-dom'
+import login from '../assets/banner.png'
+
+const Login = () => {
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        console.log("User Login: ", {email, password});
+    };
+
+  return (
+    <div className='flex'>
+        <div className='w-full md:w-1/2 flex flex-col justify-center items-center p-8 md:p-12'>
+            <form onSubmit={handleSubmit} className='w-full max-w-md bg-white p-8 rounded-lg border shadow-sm'>
+                <div className='flex justify-center mb-6'>
+                    <h2 className='text-xl font-medium'>FM Style</h2>
+                </div>
+                <h2 className='text-2xl font-bold text-center mb-6'>Chào bạn!</h2>
+                <p className='text-center mb-6'>
+                    Nhập tên người dùng và mật khẩu của bạn để đăng nhập.
+                </p>
+                <div className='mb-4'>
+                    <label className='block text-sm font-semibold mb-2'>Email</label>
+                    <input type='email' 
+                    value={email} 
+                    onChange={(e) => setEmail(e.target.value)}
+                    className='w-full p-2 border rounded'
+                    placeholder='Nhập địa chỉ email của bạn' />
+                </div>
+                <div className='mb-4'>
+                    <label className='block text-sm font-semibold mb-2'>Mật khẩu</label>
+                    <input type='password'
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className='w-full p-2 border rounded'
+                    placeholder='Nhập mật khẩu của bạn' />
+                </div>
+                <button type='submit'
+                className='w-full bg-black text-white p-2 rounded-lg font-semibold hover:bg-gray-800 transition' >
+                    Đăng nhập
+                </button>
+                <p className='mt-6 text-center text-sm'>
+                    Chưa có tài khoản? {" "}
+                    <Link to='/register' className='text-blue-500'>
+                        Đăng ký
+                    </Link>
+                </p>
+            </form>
+        </div>
+        <div className='hidden md:block w-1/2 bg-gray-800'>
+            <div className='h-full flex flex-col justify-center items-center'>
+                <img src={login} alt='Login to Account' className='h-[750] w-full object-cover' />
+            </div>
+        </div>
+    </div>
+  )
+}
+
+export default Login
