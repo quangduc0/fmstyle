@@ -1,49 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { formatter } from './../utils/fomater';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import {fetchUserOrders} from "../redux/slices/orderSlice";
 
 const MyOrders = () => {
-    const [orders, setOrders] = useState([]);
     const navigate = useNavigate();
+    const dispatch = useDispatch();
+    const {orders, loading, error} = useSelector((state) => state.orders);
 
     useEffect(() => {
-        setTimeout(() => {
-            const mockOrders = [
-                {
-                    _id: "123",
-                    createAt: new Date(),
-                    shippingAddress: {city: "Nha Trang", country: "Việt Nam"},
-                    orderItems: [
-                        {
-                            name: "Sản phẩm 1",
-                            image: "https://picsum.photos/500/500?random=1",
-                        },
-                    ],
-                    totalPrice: 150000,
-                    isPaid: true,
-                },
-                {
-                    _id: "321",
-                    createAt: new Date(),
-                    shippingAddress: {city: "Hà Nội", country: "Việt Nam"},
-                    orderItems: [
-                        {
-                            name: "Sản phẩm 2",
-                            image: "https://picsum.photos/500/500?random=2",
-                        },
-                    ],
-                    totalPrice: 100000,
-                    isPaid: true,
-                },
-            ];
-
-            setOrders(mockOrders);
-        }, 1000);
-    }, []);
+        dispatch(fetchUserOrders());
+    }, [dispatch]);
 
     const handleRowClick = (orderId) => {
         navigate(`/order/${orderId}`)
     };
+
+    if (loading) return <p>Đang tải...</p>
+    if (error) return <p>Lỗi: {error}</p>
 
   return (
     <div className='max-w-7xl mx-auto p-4 sm:p-6'>

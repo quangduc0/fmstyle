@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import {FiChevronLeft, FiChevronRight} from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { formatter } from '../../utils/fomater'
+import axios from 'axios';
 
 const NewArrivals = () => {
     const scrollRef = useRef(null);
@@ -10,96 +11,21 @@ const NewArrivals = () => {
     const [scrollLeft, setScrollLeft] = useState(false);
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(true);
-    const newArrivals = [
-        {
-            _id: "1",
-            name: "Áo khoác phong cách",
-            price: 120000,
-            image: [
-                {
-                url: "https://picsum.photos/500/500?random=3",
-                alText: "Áo khoác phong cách",
-                },
-            ]
-        },
-        {
-            _id: "2",
-            name: "Áo khoác phong cách",
-            price: 120000,
-            image: [
-                {
-                url: "https://picsum.photos/500/500?random=4",
-                alText: "Áo khoác phong cách",
-                },
-            ]
-        },
-        {
-            _id: "3",
-            name: "Áo khoác phong cách",
-            price: 120000,
-            image: [
-                {
-                url: "https://picsum.photos/500/500?random=5",
-                alText: "Áo khoác phong cách",
-                },
-            ]
-        },
-        {
-            _id: "4",
-            name: "Áo khoác phong cách",
-            price: 120000,
-            image: [
-                {
-                url: "https://picsum.photos/500/500?random=6",
-                alText: "Áo khoác phong cách",
-                },
-            ]
-        },
-        {
-            _id: "5",
-            name: "Áo khoác phong cách",
-            price: 120000,
-            image: [
-                {
-                url: "https://picsum.photos/500/500?random=7",
-                alText: "Áo khoác phong cách",
-                },
-            ]
-        },
-        {
-            _id: "6",
-            name: "Áo khoác phong cách",
-            price: 120000,
-            image: [
-                {
-                url: "https://picsum.photos/500/500?random=8",
-                alText: "Áo khoác phong cách",
-                },
-            ]
-        },
-        {
-            _id: "7",
-            name: "Áo khoác phong cách",
-            price: 120000,
-            image: [
-                {
-                url: "https://picsum.photos/500/500?random=9",
-                alText: "Áo khoác phong cách",
-                },
-            ]
-        },
-        {
-            _id: "8",
-            name: "Áo khoác phong cách",
-            price: 120000,
-            image: [
-                {
-                url: "https://picsum.photos/500/500?random=10",
-                alText: "Áo khoác phong cách",
-                },
-            ]
-        },
-    ]
+   
+const [newArrivals, setNewArrivals] = useState([]);
+
+useEffect(() => {
+    const fetchNewArrivals = async () => {
+        try {
+            const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/products/new-arrivals`);
+            setNewArrivals(response.data);
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    fetchNewArrivals();
+}, []);
 
 const handleMouseDown = (e) => {
     setIsDragging(true);
@@ -131,12 +57,6 @@ const updateScrollButtons = () => {
         setCanScrollRight(rightScrollLable);
     }
 
-    // console.log({
-    //     scrollLeft: container.scrollLeft,
-    //     clientWidth: container.clientWidth,
-    //     containerScrollWidth: container.scrollWidth,
-    //     offsetLeft: scrollRef.current.offsetLeft,
-    // });
 }
 useEffect(() => {
     const container = scrollRef.current;
@@ -145,7 +65,7 @@ useEffect(() => {
         updateScrollButtons();
         return () => container.removeEventListener("scroll", updateScrollButtons);
     }
-}, [])
+}, [newArrivals])
 
   return (
     <section className='py-16 px-4 lg:px-0'>
@@ -174,13 +94,13 @@ useEffect(() => {
             onMouseLeave={handleMouseUpOrLeave}>
             {newArrivals.map((product) =>(
                 <div key={product._id} className='min-w-[100%] sm:min-w-[50%] lg:min-w-[30%] relative'>
-                    <img src={product.image[0]?.url} 
-                    alt={product.image[0]?.alText || product.name} 
+                    <img src={product.images[0]?.url} 
+                    alt={product.images[0]?.alText || product.name} 
                     className='w-full h-[500px] object-cover rounded-lg'
                     draggable="false"/>
                     <div className='absolute bottom-0 left-0 right-0 bg-opacity-50 backdrop-blur-md
                     text-white p-4 rounded-b-lg'>
-                        <Link to={`/product/${product._id}`} className='block'>
+                        <Link to={`/products/${product._id}`} className='block'>
                             <h4 className='font-medium '>{product.name}</h4>
                             <p className='mt-1'>{formatter(product.price)}</p>
                         </Link>

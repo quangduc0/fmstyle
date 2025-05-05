@@ -254,21 +254,6 @@ router.get("/new-arrivals", async (req, res) => {
     }
 })
 
-// GET /api/products/:id (Lấy một sản phẩm bằng ID)
-router.get("/:id", async (req, res) => {
-    try {
-        const product = await Product.findById(req.params.id);
-        if (product) {
-            res.json(product);
-        } else {
-            res.status(404).json({ message: "Không tìm thấy sản phẩm" });
-        }
-    } catch (error) {
-        console.error(error);
-        res.status(500).send("Lỗi máy chủ");
-    }
-});
-
 // GET /api/products/similar/:id
 // Xuất các sản phẩm tương tự dựa trên giới tính và danh mục của sản phẩm hiện tại
 router.get("/similar/:id", async (req, res) => {
@@ -293,5 +278,21 @@ router.get("/similar/:id", async (req, res) => {
         res.status(500).send("Lỗi máy chủ");
     }
 });
+
+// GET /api/products/:id (Lấy một sản phẩm bằng ID)
+router.get("/:id", async (req, res) => {
+    try {
+        const product = await Product.findById(req.params.id);
+        if (product) {
+            res.json(product);
+        } else {
+            res.status(404).json({ message: "Không tìm thấy sản phẩm" });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).send("Lỗi máy chủ");
+    }
+});
+
 
 module.exports = router;

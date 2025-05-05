@@ -1,15 +1,38 @@
-import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+import React, { useEffect, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import register from '../assets/banner.png'
+import { registerUser } from '../redux/slices/authSlice'
+import { useDispatch, useSelector } from 'react-redux'
+import { mergeCart } from '../redux/slices/cartSlice'
 
 const Register = () => {
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { user, guestId, loading } = useSelector((state) => state.auth);
+    const { cart } = useSelector((state) => state.cart);
+
+    const redirect = new URLSearchParams(location.search).get("redirect") || "/";
+    const isCheckoutRedirect = redirect.includes("checkout");
+
+    useEffect(() => {
+        if (user) {
+            if (cart?.products.length > 0 && guestId) {
+                dispatch(mergeCart({ guestId, user })).then(() => {
+                    navigate(isCheckoutRedirect ? "/checkout" : "/");
+                });
+            } else {
+                navigate(isCheckoutRedirect ? "/checkout" : "/");
+            }
+        }
+    }, [user, guestId, cart, navigate, isCheckoutRedirect, dispatch]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log("User Register: ", {name, email, password});
+        dispatch(registerUser({name, email, password}));
     };
 
   return (
@@ -49,11 +72,11 @@ const Register = () => {
                 </div>
                 <button type='submit'
                 className='w-full bg-black text-white p-2 rounded-lg font-semibold hover:bg-gray-800 transition' >
-                    Đăng ký
+                    {loading ? "Đang tải..." : "Đăng ký"}
                 </button>
                 <p className='mt-6 text-center text-sm'>
                     Chưa có tài khoản? {" "}
-                    <Link to='/login' className='text-blue-500'>
+                    <Link to={`/login?redirect=${encodeURIComponent(redirect)}`} className='text-blue-500'>
                         Đăng nhập
                     </Link>
                 </p>

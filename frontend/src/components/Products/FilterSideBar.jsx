@@ -18,7 +18,12 @@ const FilterSideBar = () => {
 
     const [priceRange, setPriceRange] = useState([0, 10000000]);
 
-    const categories = ["Áo", "Quần & Váy"];
+    const categories = ["Top Wear", "Bottom Wear"];
+
+    const categoryLabels = {
+        "Top Wear": "Áo",
+        "Bottom Wear": "Quần & Váy"
+      };
 
     const colors = [
         "Red",
@@ -31,20 +36,32 @@ const FilterSideBar = () => {
         "Pink", 
         "Beige", 
         "Navy",
+        "Brown",
     ];
             
     const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
     
     const materials = [
-        "Cotton (Vải bông)",
-        "Wool (Len)",
-        "Denim (Vải bò)",
-        "Polyester (Sợi tổng hợp)",
-        "Silk (Lụa)",
-        "Linen (Vải lanh)",
-        "Viscose (Vải nhân tạo mềm mịn)",
-        "Fleece (Vải nỉ ấm)"
+        "Cotton",
+        "Wool",
+        "Denim",
+        "Polyester",
+        "Silk",
+        "Linen",
+        "Viscose",
+        "Fleece"
     ];
+
+    const materialLabels = {
+        "Cotton": "Vải bông",
+        "Wool": "Len",
+        "Denim": "Vải bò",
+        "Polyester": "Sợi tổng hợp",
+        "Silk": "Lụa",
+        "Linen": "Vải lanh",
+        "Viscose": "Vải nhân tạo",
+        "Fleece": "Vải lông cừu"
+    };
 
     const brands = [
         "Coolmate",
@@ -126,7 +143,7 @@ const FilterSideBar = () => {
                     onChange={handleFilterChange}
                     checked={filters.category === category}
                     className='mr-2 h-4 w-4 text-blue-500 focus:ring-blue-400 border-gray-300' />
-                    <span className='text-gray-700'>{category}</span>
+                    <span className='text-gray-700'>{categoryLabels[category]}</span>
                 </div>
             ))}
         </div>
@@ -187,7 +204,7 @@ const FilterSideBar = () => {
                     onChange={handleFilterChange}
                     checked={filters.material.includes(material)}
                     className='mr-2 h-4 w-4 text-blue-500 focus:ring-blue-400 border-gray-300' />
-                    <span className='text-gray-700'>{material}</span>
+                    <span className='text-gray-700'>{materialLabels[material]}</span>
                 </div>
             ))}
         </div>

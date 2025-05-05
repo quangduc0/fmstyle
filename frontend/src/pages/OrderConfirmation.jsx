@@ -1,43 +1,42 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { formatter } from './../utils/fomater'
-
-const checkout = {
-    _id: "1234",
-    createdAt: new Date(),
-    checkoutItems: [
-        {
-            productId: "1",
-            name: "Áo khoác",
-            color: "Đen",
-            size: "M",
-            price: 150000,
-            quantity: 1,
-            image: "https://picsum.photos/500/500?random=1",
-        },
-        {
-            productId: "2",
-            name: "Áo thun",
-            color: "Đen",
-            size: "M",
-            price: 100000,
-            quantity: 2,
-            image: "https://picsum.photos/500/500?random=2",
-        },
-    ],
-    shippingAddress: {
-        address: "123 Duong Aa",
-        city: "Nha Trang",
-        country: "Việt Nam",
-    }
-}
+import { useDispatch, useSelector } from 'react-redux'
+import { useNavigate } from 'react-router-dom';
+import { clearCart } from '../redux/slices/cartSlice';
 
 const OrderConfirmation = () => {
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+    const {checkout} = useSelector((state) => state.checkout);
+
+    useEffect(() => {
+        if (checkout && checkout._id) {
+            dispatch(clearCart());
+            localStorage.removeItem("cart");
+        } else {
+            navigate("/my-orders");
+        }
+    }, [checkout, dispatch, navigate]);
 
     const calculateEstimatedDelivery = (createdAt) => {
         const orderDate = new Date(createdAt);
         orderDate.setDate(orderDate.getDate() + 10); //Thêm 10 ngày vào ngày đặt hàng
         return orderDate.toLocaleDateString("vi-VN");
     }
+
+    const colorMap = {
+        Red: "Đỏ",
+        Blue: "Xanh trời",
+        Black: "Đen",
+        Green: "Xanh lá",
+        Yellow: "Vàng",
+        Gray: "Xám",
+        White: "Trắng",
+        Pink: "Hồng",
+        Beige: "Be",
+        Navy: "Xanh đậm",
+        Brown: "Nâu",
+    };
 
   return (
     <div className='max-w-4xl mx-auto p-6 bg-white'>
@@ -74,7 +73,7 @@ const OrderConfirmation = () => {
                             <div>
                                 <h4 className='text-md font-semibold'>{item.name}</h4>
                                 <p className='text-sm text-gray-500'>
-                                    Màu: {item.color}  |  Cỡ: {item.size}
+                                    Màu: {colorMap[item.color]}  |  Cỡ: {item.size}
                                 </p>
                             </div>
                             <div className='ml-auto text-right'>

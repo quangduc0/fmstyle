@@ -1,23 +1,25 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { formatter } from '../../utils/fomater'
 import { Link } from 'react-router-dom'
+import { useDispatch, useSelector } from 'react-redux'
+import { deleteProduct, fetchAdminProducts } from '../../redux/slices/adminProductSlice'
 
 const ProductManagement = () => {
-    const products = [
-        {
-            _id: 123,
-            name: "Ao thun",
-            price: 100000,
-            sku: "12312312"
-        },
-    ]
+    const dispatch = useDispatch();
+    const {products, loading, error} = useSelector((state) => state.adminProducts);
 
+    useEffect(() => {
+        dispatch(fetchAdminProducts());
+    }, [dispatch]);
+    
     const handleDelete = (id) => {
         if(window.confirm("Xác nhận xóa sản phẩm?")){
-            console.log("Xoa san pham voi Id:", id);
-            
-        }
-    }
+            dispatch(deleteProduct(id));
+        } 
+    };
+    
+    if(loading) return <p>Đang tải...</p>;
+    if(error) return <p>Lỗi: {error}</p>;
 
   return (
     <div className='max-w-7xl mx-auto p-6'>
