@@ -5,6 +5,7 @@ import { formatter } from '../../utils/fomater'
 import { useDispatch, useSelector } from 'react-redux'
 import { createCheckout } from "../../redux/slices/checkoutSlice"
 import axios from 'axios'
+import { getVietnameseColor } from '../../utils/colorMap'
 
 const Checkout = () => {
     const navigate = useNavigate();
@@ -77,20 +78,6 @@ const Checkout = () => {
     if (!cart || !cart.products || cart.products.length === 0) {
         return <p>Giỏ hàng của bạn trống</p>
     }
-
-    const colorMap = {
-        Red: "Đỏ",
-        Blue: "Xanh trời",
-        Black: "Đen",
-        Green: "Xanh lá",
-        Yellow: "Vàng",
-        Gray: "Xám",
-        White: "Trắng",
-        Pink: "Hồng",
-        Beige: "Be",
-        Navy: "Xanh đậm",
-        Brown: "Nâu",
-    };
 
     return (
         <div className='grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto py-10 px-6 tracking-tighter'>
@@ -197,7 +184,7 @@ const Checkout = () => {
                                 <div>
                                     <h3 className='text-md'>{product.name}</h3>
                                     <p className='text-gray-500'>Kích cỡ: {product.size}</p>
-                                    <p className='text-gray-500'>Màu sắc: {colorMap[product.color]}</p>
+                                    <p className='text-gray-500'>Màu sắc: {getVietnameseColor(product.color)}</p>
                                     <p className='text-gray-500'>Số lượng: {product.quantity}</p>
                                 </div>
                             </div>

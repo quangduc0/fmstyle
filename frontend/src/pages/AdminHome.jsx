@@ -77,13 +77,13 @@ const AdminHome = () => {
                         </thead>
                         <tbody>
                             {orders.length > 0 ? (
-                                orders.map((orders) => (
-                                    <tr key={orders._id}
+                                orders.map((order) => (
+                                    <tr key={order._id}
                                         className='border-b hover:bg-gray-50 cursor-pointer'>
-                                        <td className='p-4'>{orders._id}</td>
-                                        <td className='p-4'>{orders.user.name}</td>
-                                        <td className='p-4'>{formatter(orders.totalPrice)}</td>
-                                        <td className='p-4'>{statusLabel(orders.status)}</td>
+                                        <td className='p-4'>{order._id}</td>
+                                        <td className='p-4'>{order.user.name}</td>
+                                        <td className='p-4'>{formatter(order.totalPrice)}</td>
+                                        <td className='p-4'>{statusLabel(order.status)}</td>
                                     </tr>
                                 ))
                             ) : (

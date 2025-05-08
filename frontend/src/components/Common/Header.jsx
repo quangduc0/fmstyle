@@ -4,9 +4,10 @@ import Navbar from './Navbar'
 
 const Header = () => {
   return (
-    <header className='border-b border-gray-200'>
-        <Topbar />
-        <Navbar />
+    <header className='sticky top-0 z-40 bg-white'>
+      <Topbar />
+      <Navbar />
+      <div className="border-b border-gray-200"></div>
     </header>
   )
 }

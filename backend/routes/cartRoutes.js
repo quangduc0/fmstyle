@@ -29,15 +29,16 @@ router.post("/", async (req, res) => {
         const product = await Product.findById(productId);
         if (!productId) return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
 
+        const effectivePrice = (product.discountPrice && product.discountPrice > 0 && product.discountPrice < product.price) 
+            ? product.discountPrice 
+            : product.price;
         // Xác định xem người dùng đã đăng nhập hay khách
         let cart = await getCart(userId, guestId);
-
         // Nếu giỏ hàng tồn tại, cập nhật nó
         if (cart) {
             const productIndex = cart.products.findIndex(
                 (p) => p.productId.toString() === productId && p.size === size && p.color === color
             );
-
             if (productIndex > -1) {
                 // Nếu sản phẩm đã có thì cập nhật số lượng
                 cart.products[productIndex].quantity += quantity;
@@ -47,13 +48,12 @@ router.post("/", async (req, res) => {
                     productId,
                     name: product.name,
                     image: product.images[0].url,
-                    price: product.price,
+                    price: effectivePrice,
                     size,
                     color,
                     quantity,
                 });
             }
-
             // Tính lại tổng giá
             cart.totalPrice = cart.products.reduce((acc, item) => acc + item.price * item.quantity, 0);
             await cart.save();
@@ -68,13 +68,13 @@ router.post("/", async (req, res) => {
                         productId,
                         name: product.name,
                         image: product.images[0].url,
-                        price: product.price,
+                        price: effectivePrice,
                         size,
                         color,
                         quantity,
                     },
                 ],
-                totalPrice: product.price * quantity,
+                totalPrice: effectivePrice * quantity,
             });
             return res.status(201).json(newCart)
         }

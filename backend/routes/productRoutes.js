@@ -24,8 +24,6 @@ router.post("/", protect, admin, async (req, res) => {
             isFeatured,
             isPublished,
             tags,
-            dimensions,
-            weight,
             sku,
         } = req.body;
 
@@ -46,8 +44,6 @@ router.post("/", protect, admin, async (req, res) => {
             isFeatured,
             isPublished,
             tags,
-            dimensions,
-            weight,
             sku,
             user: req.user._id,
         });
@@ -81,8 +77,6 @@ router.put("/:id", protect, admin, async (req, res) => {
             isFeatured,
             isPublished,
             tags,
-            dimensions,
-            weight,
             sku,
         } = req.body;
 
@@ -107,8 +101,6 @@ router.put("/:id", protect, admin, async (req, res) => {
             product.isFeatured = isFeatured !== undefined ? isFeatured : product.isFeatured;
             product.isPublished = isPublished !== undefined ? isPublished : product.isPublished;
             product.tags = tags || product.tags;
-            product.dimensions = dimensions || product.dimensions;
-            product.weight = weight || product.weight;
             product.sku = sku || product.sku;
 
             // Lưu sản phẩm đã cập nhật

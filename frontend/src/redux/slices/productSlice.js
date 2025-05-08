@@ -41,6 +41,17 @@ export const fetchProductDetails = createAsyncThunk("products/fetchProductDetail
     return response.data;
 });
 
+export const createProduct = createAsyncThunk("products/createProduct", async ({ productData }) => {
+    const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/products`, productData,
+        {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("userToken")}`,
+            },
+        }
+    );
+    return response.data;
+});
+
 export const updateProduct = createAsyncThunk("products/updateProduct", async ({ id, productData }) => {
     const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/products/${id}`, productData,
         {
@@ -117,6 +128,17 @@ const productSlice = createSlice({
             state.loading = false;
             state.selectedProduct = action.payload;
         }).addCase(fetchProductDetails.rejected, (state, action) => {
+            state.loading = false;
+            state.error = action.error.message;
+        }).addCase(createProduct.pending, (state) => {
+            state.loading = true;
+            state.error = null;
+        })
+        .addCase(createProduct.fulfilled, (state, action) => {
+            state.loading = false;
+            state.products.push(action.payload);
+        })
+        .addCase(createProduct.rejected, (state, action) => {
             state.loading = false;
             state.error = action.error.message;
         }).addCase(updateProduct.pending, (state) => {

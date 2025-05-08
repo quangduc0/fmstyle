@@ -3,6 +3,7 @@ import { formatter } from './../utils/fomater'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom';
 import { clearCart } from '../redux/slices/cartSlice';
+import { getVietnameseColor } from '../utils/colorMap';
 
 const OrderConfirmation = () => {
     const dispatch = useDispatch();
@@ -23,20 +24,6 @@ const OrderConfirmation = () => {
         orderDate.setDate(orderDate.getDate() + 10); //Thêm 10 ngày vào ngày đặt hàng
         return orderDate.toLocaleDateString("vi-VN");
     }
-
-    const colorMap = {
-        Red: "Đỏ",
-        Blue: "Xanh trời",
-        Black: "Đen",
-        Green: "Xanh lá",
-        Yellow: "Vàng",
-        Gray: "Xám",
-        White: "Trắng",
-        Pink: "Hồng",
-        Beige: "Be",
-        Navy: "Xanh đậm",
-        Brown: "Nâu",
-    };
 
   return (
     <div className='max-w-4xl mx-auto p-6 bg-white'>
@@ -73,7 +60,7 @@ const OrderConfirmation = () => {
                             <div>
                                 <h4 className='text-md font-semibold'>{item.name}</h4>
                                 <p className='text-sm text-gray-500'>
-                                    Màu: {colorMap[item.color]}  |  Cỡ: {item.size}
+                                    Màu: {getVietnameseColor(item.color)}  |  Cỡ: {item.size}
                                 </p>
                             </div>
                             <div className='ml-auto text-right'>

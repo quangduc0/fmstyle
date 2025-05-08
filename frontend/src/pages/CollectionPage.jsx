@@ -17,6 +17,7 @@ const CollectionPage = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
     dispatch(fetchProductByFilters({collection, ...queryParams}));
   }, [dispatch, collection, searchParams]);
 
@@ -39,17 +40,24 @@ const CollectionPage = () => {
   
   return (
     <div className='flex flex-col lg:flex-row'>
-      <button onClick={toggleSidebar}
+      <div className='sticky top-[110px] z-30 bg-white border-b border-gray-200'>
+        <div className=' mx-auto px-4 py-2 flex justify-between items-center'>
+          <h2></h2>
+          <button onClick={toggleSidebar}
         className='lg:hidden border p-2 flex justify-center items-center'>
         <FaFilter className='mr-2' /> Lọc sản phẩm
       </button>
+        </div>
+      </div>
+      
 
       <div ref={sidebarRef}
         className={`${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} 
-            fixed inset-y-0 z-50 left-0 w-64 bg-white overflow-y-auto transition-transform 
-            duration-300 lg:static lg:translate-x-0`}>
+            fixed top-[110px] bottom-0 z-30 left-0 w-64 bg-white overflow-y-auto transition-transform 
+            duration-300 lg:sticky lg:top-[110px] lg:translate-x-0 lg:h-[calc(100vh-110px)]`}>
         <FilterSideBar />
       </div>
+      
       <div className='flex-grow p-4'>
         <h2 className='text-2xl uppercase mb-4'>Tất cả sản phẩm</h2>
         <SortOptions />

@@ -1,18 +1,15 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router-dom';
-import { fetchProductDetails, updateProduct } from '../../redux/slices/productSlice';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { createProduct } from '../../redux/slices/productSlice';
 import colorMap from '../../utils/colorMap';
 import { colorHexMap } from '../../utils/colorMap';
-import { formatter } from '../../utils/fomater';
 
-const EditProduct = ({ productId }) => {
+const AddProduct = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const { id } = useParams();
-    const { selectedProduct, loading, error } = useSelector((state) => state.products)
-
+    const { loading, error } = useSelector((state) => state.products);
     const [productData, setProductData] = useState({
         name: "",
         description: "",
@@ -27,54 +24,47 @@ const EditProduct = ({ productId }) => {
         collections: "",
         material: "",
         gender: "",
+        tags: [],
         images: [],
     });
-
-    const MAX_IMAGES = 5;
+    const availableSizes = ["S", "M", "L", "XL", "XXL"];
+    const availableColors = Object.keys(colorMap);
 
     const [discountType, setDiscountType] = useState('direct');
     const [discountPercentage, setDiscountPercentage] = useState('');
 
     const [uploading, setUploading] = useState(false);
-    const productFetchId = productId || id;
-
-    const availableSizes = ["S", "M", "L", "XL", "XXL"];
-    const availableColors = Object.keys(colorMap);
-
-    useEffect(() => {
-        if (id) {
-            dispatch(fetchProductDetails({ id: productFetchId }));
-        }
-    }, [dispatch, id]);
+    const [skuCounter, setSkuCounter] = useState(() => {
+        const savedCounter = localStorage.getItem('skuCounter');
+        return savedCounter ? parseInt(savedCounter, 10) : 0;
+    });
 
     useEffect(() => {
-        if (selectedProduct) {
-            setProductData(selectedProduct);
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const counterString = String(skuCounter).padStart(3, '0');
+        const formattedDate = `${day}${month}${year}`;
+        const generatedSKU = `SKU-${formattedDate}-${counterString}`;
 
-            if (selectedProduct.discountPrice && selectedProduct.discountPrice > 0) {
-                setDiscountType('direct');
-            }
-        }
-    }, [selectedProduct])
+        setProductData(prev => ({
+            ...prev,
+            sku: generatedSKU
+        }));
+    }, [skuCounter]);
 
     const handleChange = (e) => {
-        const { name, value, type } = e.target;
-        
-        if (name === 'price' || name === 'discountPrice') {
-            let numValue;
-            
-            if (value === '' || isNaN(parseFloat(value))) {
-                numValue = 0;
-            } else {
-                numValue = parseFloat(value);
-                numValue = Math.max(0, numValue);
-            }
-            
-            setProductData((prevData) => ({ ...prevData, [name]: numValue }));
+        const { name, value, type, checked } = e.target;
+        if (type === "checkbox") {
+            setProductData((prev) => ({ ...prev, [name]: checked }));
+        } else if (name === 'price' || name === 'discountPrice') {
+            const numValue = parseFloat(value) || 0;
+            setProductData((prev) => ({ ...prev, [name]: numValue }));
         } else {
-            setProductData((prevData) => ({ ...prevData, [name]: value }));
+            setProductData((prev) => ({ ...prev, [name]: value }));
         }
-    }
+    };
 
     const calculateDiscountPrice = () => {
         if (!discountPercentage || !productData.price) return;
@@ -94,6 +84,11 @@ const EditProduct = ({ productId }) => {
             ...prev,
             discountPrice: roundedPrice
         }));
+    };
+
+    const handleArrayInput = (e, field) => {
+        const values = e.target.value.split(",").map((v) => v.trim());
+        setProductData((prev) => ({ ...prev, [field]: values }));
     };
 
     const handleSizeToggle = (size) => {
@@ -128,75 +123,76 @@ const EditProduct = ({ productId }) => {
 
     const handleImageUpload = async (e) => {
         const file = e.target.files[0];
-
-        if (productData.images.length >= MAX_IMAGES) {
-            toast.error(`Bạn chỉ có thể tải lên tối đa ${MAX_IMAGES} hình ảnh cho mỗi sản phẩm.`, {
-                duration: 3000
-            });
-            return;
-        }
-
         const formData = new FormData();
         formData.append("image", file);
-
         try {
             setUploading(true);
-            const { data } = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/upload`, formData,
-                {
-                    headers: { "Content-Type": "multipart/form-data" },
-                }
+            const { data } = await axios.post(
+                `${import.meta.env.VITE_BACKEND_URL}/api/upload`,
+                formData,
+                { headers: { "Content-Type": "multipart/form-data" } }
             );
-            setProductData((prevData) => ({
-                ...prevData,
-                images: [...prevData.images, { url: data.imageUrl, altText: "" }],
+            setProductData((prev) => ({
+                ...prev,
+                images: [...prev.images, { url: data.imageUrl, altText: "" }],
             }));
-            setUploading(false);
-        } catch (error) {
-            console.error(error);
+        } catch (err) {
+            console.error(err);
+        } finally {
             setUploading(false);
         }
-    }
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        dispatch(updateProduct({ id, productData }));
-        navigate("/admin/products")
-    }
+        dispatch(createProduct({ productData }))
+            .then(() => {
+                const newCounter = (skuCounter + 1) % 1000;
+                setSkuCounter(newCounter);
+                localStorage.setItem('skuCounter', newCounter.toString());
+
+                navigate("/admin/products");
+            });
+    };
 
     if (loading) return <p>Đang tải...</p>;
     if (error) return <p>Lỗi: {error}</p>;
 
     return (
-        <div className='max-w-5xl mx-auto p-6 shadow-md rounded-md'>
-            <h2 className='text-3xl font-bold mb-6'>Chỉnh sửa sản phẩm</h2>
+        <div className="max-w-5xl mx-auto p-6 shadow-md rounded-md">
+            <h2 className="text-3xl font-bold mb-6">Thêm sản phẩm mới</h2>
             <form onSubmit={handleSubmit}>
                 <div className='mb-6'>
                     <label className='block font-semibold mb-2'>Tên sản phẩm</label>
-                    <input type="text"
+                    <input
+                        type="text"
                         name='name'
                         value={productData.name}
                         onChange={handleChange}
                         className='w-full border border-gray-300 rounded-md p-2'
-                        required />
+                        required
+                    />
                 </div>
-
                 <div className='mb-6'>
                     <label className='block font-semibold mb-2'>Mô tả</label>
-                    <textarea name="description"
+                    <textarea
+                        name="description"
                         value={productData.description}
                         onChange={handleChange}
                         className='w-full border border-gray-300 rounded-md p-2'
                         rows={4}
-                        required ></textarea>
+                        required
+                    ></textarea>
                 </div>
-
                 <div className='mb-6'>
                     <label className='block font-semibold mb-2'>Giá</label>
-                    <input type="number"
+                    <input
+                        type="number"
                         name='price'
                         value={productData.price}
                         onChange={handleChange}
-                        className='w-full border border-gray-300 rounded-md p-2' />
+                        className='w-full border border-gray-300 rounded-md p-2'
+                    />
                 </div>
 
                 <div className='mb-6'>
@@ -230,7 +226,6 @@ const EditProduct = ({ productId }) => {
                             name='discountPrice'
                             value={productData.discountPrice}
                             onChange={handleChange}
-                            min="0"
                             className='w-full border border-gray-300 rounded-md p-2'
                         />
                     ) : (
@@ -253,36 +248,59 @@ const EditProduct = ({ productId }) => {
                             {productData.discountPrice > 0 && (
                                 <div className="ml-4">
                                     <span className="text-gray-700">Giá sau giảm: </span>
-                                    <span className="font-semibold">{formatter(productData.discountPrice)}</span>
+                                    <span className="font-semibold">{productData.discountPrice.toLocaleString('vi-VN')} ₫</span>
                                 </div>
                             )}
                         </div>
                     )}
                     <p className="text-sm text-gray-500 mt-1">
                         {discountType === 'direct'
-                            ? "Nhập giá muốn giảm"
-                            : "Nhập số phần trăm muốn giảm."}
+                            ? "Nhập giá sau khi đã giảm. Giá 0 có nghĩa là không giảm giá."
+                            : "Nhập số phần trăm muốn giảm (-10%) hoặc tăng (+10%) và nhấn nút Tính."}
                     </p>
                 </div>
 
                 <div className='mb-6'>
                     <label className='block font-semibold mb-2'>Số lượng còn lại</label>
-                    <input type="number"
+                    <input
+                        type="number"
                         name='countInStock'
                         value={productData.countInStock}
                         onChange={handleChange}
-                        className='w-full border border-gray-300 rounded-md p-2' />
+                        className='w-full border border-gray-300 rounded-md p-2'
+                    />
                 </div>
-
                 <div className='mb-6'>
                     <label className='block font-semibold mb-2'>SKU</label>
-                    <input type="text"
+                    <input
+                        type="text"
                         name='sku'
                         value={productData.sku}
                         onChange={handleChange}
-                        className='w-full border border-gray-300 rounded-md p-2' />
+                        className='w-full border border-gray-300 rounded-md p-2'
+                        readOnly
+                    />
                 </div>
-
+                <div className='mb-6'>
+                    <label className='block font-semibold mb-2'>Danh mục</label>
+                    <input
+                        type="text"
+                        name='category'
+                        value={productData.category}
+                        onChange={handleChange}
+                        className='w-full border border-gray-300 rounded-md p-2'
+                    />
+                </div>
+                <div className='mb-6'>
+                    <label className='block font-semibold mb-2'>Thương hiệu</label>
+                    <input
+                        type="text"
+                        name='brand'
+                        value={productData.brand}
+                        onChange={handleChange}
+                        className='w-full border border-gray-300 rounded-md p-2'
+                    />
+                </div>
                 <div className='mb-6'>
                     <label className='block font-semibold mb-2'>Kích cỡ</label>
                     <div className='flex flex-wrap gap-2'>
@@ -304,7 +322,6 @@ const EditProduct = ({ productId }) => {
                         Kích cỡ đã chọn: {productData.sizes.join(", ")}
                     </div>
                 </div>
-
                 <div className='mb-6'>
                     <label className='block font-semibold mb-2'>Màu sắc</label>
                     <div className='flex flex-wrap gap-2 max-h-48 overflow-y-auto p-2 border border-gray-200 rounded'>
@@ -335,104 +352,80 @@ const EditProduct = ({ productId }) => {
                         Màu sắc đã chọn: {productData.colors.map(color => colorMap[color] || color).join(", ")}
                     </div>
                 </div>
-
-                <div className='mb-6'>
-                    <label className='block font-semibold mb-2'>Danh mục</label>
-                    <input type="text"
-                        name='category'
-                        value={productData.category || ""}
-                        onChange={handleChange}
-                        className='w-full border border-gray-300 rounded-md p-2' />
-                </div>
-
-                <div className='mb-6'>
-                    <label className='block font-semibold mb-2'>Thương hiệu</label>
-                    <input type="text"
-                        name='brand'
-                        value={productData.brand || ""}
-                        onChange={handleChange}
-                        className='w-full border border-gray-300 rounded-md p-2' />
-                </div>
-
                 <div className='mb-6'>
                     <label className='block font-semibold mb-2'>Bộ sưu tập</label>
-                    <input type="text"
+                    <input
+                        type="text"
                         name='collections'
-                        value={productData.collections || ""}
+                        value={productData.collections}
                         onChange={handleChange}
-                        className='w-full border border-gray-300 rounded-md p-2' />
+                        className='w-full border border-gray-300 rounded-md p-2'
+                    />
                 </div>
-
                 <div className='mb-6'>
                     <label className='block font-semibold mb-2'>Chất liệu</label>
-                    <input type="text"
+                    <input
+                        type="text"
                         name='material'
-                        value={productData.material || ""}
+                        value={productData.material}
                         onChange={handleChange}
-                        className='w-full border border-gray-300 rounded-md p-2' />
+                        className='w-full border border-gray-300 rounded-md p-2'
+                    />
                 </div>
-
                 <div className='mb-6'>
                     <label className='block font-semibold mb-2'>Giới tính</label>
-                    <input type="text"
+                    <input
+                        type="text"
                         name='gender'
-                        value={productData.gender || ""}
+                        value={productData.gender}
                         onChange={handleChange}
-                        className='w-full border border-gray-300 rounded-md p-2' />
+                        className='w-full border border-gray-300 rounded-md p-2'
+                    />
                 </div>
-
                 <div className='mb-6'>
-                    <label className='block font-semibold mb-2'>
-                        Tải hình ảnh lên ({productData.images.length}/{MAX_IMAGES})
-                    </label>
+                    <label className='block font-semibold mb-2'>Tags</label>
+                    <input
+                        type="text"
+                        name='tags'
+                        value={productData.tags.join(", ")}
+                        onChange={(e) => setProductData({
+                            ...productData, tags: e.target.value.split(",").map((tag) => tag.trim()),
+                        })}
+                        className='w-full border border-gray-300 rounded-md p-2'
+                    />
+                </div>
+                <div className='mb-6'>
+                    <label className='block font-semibold mb-2'>Tải hình ảnh lên</label>
                     <input
                         type="file"
                         onChange={handleImageUpload}
-                        disabled={productData.images.length >= MAX_IMAGES || uploading}
                     />
-                    {productData.images.length >= MAX_IMAGES && (
-                        <p className="text-red-500 text-sm mt-1">
-                            Bạn đã đạt giới hạn số lượng hình ảnh
-                        </p>
-                    )}
-                    <div className='flex flex-wrap gap-4 mt-4'>
+                    <div className='flex gap-4 mt-4'>
                         {productData.images.map((image, index) => (
-                            <div key={index} className="relative">
+                            <div key={index}>
                                 <img
                                     src={image.url}
                                     alt={image.altText || "Product Image"}
                                     className='w-20 h-20 object-cover rounded-md shadow-md'
                                 />
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setProductData(prev => ({
-                                            ...prev,
-                                            images: prev.images.filter((_, i) => i !== index)
-                                        }))
-                                    }}
-                                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center"
-                                >
-                                    &times;
-                                </button>
                             </div>
                         ))}
                     </div>
                 </div>
-
-                <button type='submit'
-                    className='w-full bg-green-500 text-white py-2 rounded-md hover:bg-green-600 transition-colors'
+                <button
+                    type="submit"
+                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
                     disabled={loading || uploading}
                 >
                     {loading
-                        ? "Đang cập nhật..."
+                        ? "Đang thêm sản phẩm..."
                         : uploading
                             ? "Đang tải ảnh lên..."
-                            : "Cập nhật sản phẩm"}
+                            : "Thêm sản phẩm"}
                 </button>
             </form>
         </div>
-    )
-}
+    );
+};
 
-export default EditProduct
+export default AddProduct;

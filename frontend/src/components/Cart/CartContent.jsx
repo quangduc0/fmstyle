@@ -3,6 +3,7 @@ import { formatter } from '../../utils/fomater'
 import { RiDeleteBin3Line } from 'react-icons/ri'
 import { useDispatch } from 'react-redux'
 import { removeFromCart, updateCartItemQuantity } from '../../redux/slices/cartSlice'
+import { getVietnameseColor } from '../../utils/colorMap'
 
 const CartContent = ({ cart, userId, guestId }) => {
     const dispatch = useDispatch();
@@ -27,20 +28,6 @@ const CartContent = ({ cart, userId, guestId }) => {
         dispatch(removeFromCart({ productId, guestId, userId, size, color }));
     };
 
-    const colorMap = {
-        Red: "Đỏ",
-        Blue: "Xanh trời",
-        Black: "Đen",
-        Green: "Xanh lá",
-        Yellow: "Vàng",
-        Gray: "Xám",
-        White: "Trắng",
-        Pink: "Hồng",
-        Beige: "Be",
-        Navy: "Xanh đậm",
-        Brown: "Nâu",
-    };
-
     return (
         <div>
             {cart.products.map((product, index) => (
@@ -50,7 +37,7 @@ const CartContent = ({ cart, userId, guestId }) => {
                         <div>
                             <h3>{product.name}</h3>
                             <p className='text-sm text-gray-500'>
-                                Cỡ: {product.size} | Màu: {colorMap[product.color] || product.color}
+                                Cỡ: {product.size} | Màu: {getVietnameseColor(product.color) || product.color}
                             </p>
                             <div className='flex items-center mt-2'>
                                 <button
