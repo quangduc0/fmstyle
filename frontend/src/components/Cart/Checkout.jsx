@@ -14,6 +14,7 @@ const Checkout = () => {
     const { user } = useSelector((state) => state.auth);
 
     const [checkoutId, setCheckOutId] = useState(null);
+    const [paymentMethod, setPaymentMethod] = useState("paypal");
     const [shippingAddress, setShipAddress] = useState({
         firstName: "",
         lastName: "",
@@ -36,11 +37,17 @@ const Checkout = () => {
             const res = await dispatch(createCheckout({
                 checkoutItems: cart.products,
                 shippingAddress,
-                paymentMethod: "Paypal",
+                paymentMethod,
+                paymentStatus: paymentMethod === "cod" ? "unpaid" : "paid",
                 totalPrice: cart.totalPrice,
             }));
+
             if (res.payload && res.payload._id) {
                 setCheckOutId(res.payload._id);
+
+                if (paymentMethod === "cod") {
+                    await handleFinalizeCheckout(res.payload._id);
+                }
             }
         }
     }
@@ -153,19 +160,57 @@ const Checkout = () => {
                             className='w-full p-2 border rounded'
                             required />
                     </div>
+
+                    <h3 className='text-lg mb-4'>Phương thức thanh toán</h3>
+                    <div className='mb-4'>
+                        <label className='inline-flex items-center mr-6'>
+                            <input
+                                type="radio"
+                                name="paymentMethod"
+                                value="paypal"
+                                checked={paymentMethod === "paypal"}
+                                onChange={() => setPaymentMethod("paypal")}
+                                className="mr-2"
+                            />
+                            Paypal
+                        </label>
+                        <label className='inline-flex items-center'>
+                            <input
+                                type="radio"
+                                name="paymentMethod"
+                                value="cod"
+                                checked={paymentMethod === "cod"}
+                                onChange={() => setPaymentMethod("cod")}
+                                className="mr-2"
+                            />
+                            Thanh toán khi nhận hàng
+                        </label>
+                    </div>
+
+
                     <div className='mt-6'>
                         {!checkoutId ? (
                             <button type='submit'
                                 className='w-full bg-black text-white py-3 rounded' >
                                 Tiến hành thanh toán
                             </button>
-                        ) : (
+                        ) : paymentMethod === "paypal" ? (
                             <div>
                                 <h3 className='text-lg mb-4'>Thanh toán bằng</h3>
-                                <BankingButton amount={cart.totalPrice}
+                                <BankingButton
+                                    amount={cart.totalPrice}
                                     onSuccess={handlePaymentSuccess}
-                                    onError={(err) => alert("Thanh toán không thành công. Hãy thử lại.")} />
+                                    onError={() => alert("Thanh toán không thành công. Hãy thử lại.")}
+                                />
                             </div>
+                        ) : (
+                            <button
+                                type='button'
+                                onClick={() => handleFinalizeCheckout(checkoutId)}
+                                className='w-full bg-green-600 text-white py-3 rounded'
+                            >
+                                Đang xác nhận...
+                            </button>
                         )}
                     </div>
                 </form>

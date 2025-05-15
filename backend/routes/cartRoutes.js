@@ -1,6 +1,7 @@
 const express = require("express");
 const Cart = require("../models/Cart");
 const Product = require("../models/Product");
+const Promotion = require("../models/Promotion");
 const { protect } = require("../middleware/authMiddleware");
 
 const router = express.Router();
@@ -29,9 +30,33 @@ router.post("/", async (req, res) => {
         const product = await Product.findById(productId);
         if (!productId) return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
 
-        const effectivePrice = (product.discountPrice && product.discountPrice > 0 && product.discountPrice < product.price) 
-            ? product.discountPrice 
-            : product.price;
+        const now = new Date();
+        const activePromotions = await Promotion.find({
+            isActive: true,
+            startDate: { $lte: now },
+            endDate: { $gte: now }
+        });
+        
+
+        let effectivePrice = product.price;
+        if (product.discountPrice && product.discountPrice > 0 && product.discountPrice < product.price) {
+            effectivePrice = product.discountPrice;
+        }
+        
+        if (activePromotions.length > 0) {
+            const applicablePromotion = activePromotions.find(promo => {
+                return promo.categories.includes('All') || 
+                      (product.category && promo.categories.includes(product.category)) ||
+                      (product.gender && promo.categories.includes(product.gender));
+            });
+            
+            if (applicablePromotion) {
+                const discountAmount = (product.price * (applicablePromotion.discountPercent / 100));
+                const promotionPrice = Math.floor(product.price - discountAmount);
+                
+                effectivePrice = Math.min(effectivePrice, promotionPrice);
+            }
+        }
         // Xác định xem người dùng đã đăng nhập hay khách
         let cart = await getCart(userId, guestId);
         // Nếu giỏ hàng tồn tại, cập nhật nó
@@ -107,7 +132,7 @@ router.put("/", async (req, res) => {
             if (quantity > 0) {
                 cart.products[productIndex].quantity = quantity;
             } else {
-                cart.products.splice(productIndex, 1); //Xóa sản phẩm nếu số lượng bằng 0
+                cart.products.splice(productIndex, 1);
             }
 
             cart.totalPrice = cart.products.reduce((acc, item) => acc + item.price * item.quantity, 0);

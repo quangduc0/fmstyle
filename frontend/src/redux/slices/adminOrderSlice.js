@@ -27,6 +27,21 @@ export const updateOrderStatus = createAsyncThunk("adminOrders/updateOrderStatus
     }
 });
 
+export const updatePaymentStatus = createAsyncThunk("adminOrders/updatePaymentStatus", async ({id, paymentStatus}, {rejectWithValue}) => {
+    try {
+        const response = await axios.put(
+            `${import.meta.env.VITE_BACKEND_URL}/api/admin/orders/${id}/payment`,
+            {paymentStatus},
+            {
+                headers: {Authorization: `Bearer ${localStorage.getItem("userToken")}`},
+            }
+        );
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response.data);
+    }
+});
+
 export const deleteOrder = createAsyncThunk("adminOrders/deleteOrder", async (id, {rejectWithValue}) => {
     try {
         await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/admin/orders/${id}`,
@@ -67,6 +82,12 @@ const adminOrderSlice = createSlice({
             state.loading = false;
             state.error = action.payload.message;
         }).addCase(updateOrderStatus.fulfilled, (state, action) => {
+            const updatedOrder = action.payload;
+            const orderIndex = state.orders.findIndex((order) => order._id === updatedOrder._id);
+            if(orderIndex !== -1){
+                state.orders[orderIndex] = updatedOrder;
+            }
+        }).addCase(updatePaymentStatus.fulfilled, (state, action) => {
             const updatedOrder = action.payload;
             const orderIndex = state.orders.findIndex((order) => order._id === updatedOrder._id);
             if(orderIndex !== -1){

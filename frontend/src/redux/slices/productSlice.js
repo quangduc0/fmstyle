@@ -35,11 +35,17 @@ export const fetchProductByFilters = createAsyncThunk("products/fetchByFilters",
     return response.data;
 });
 
-export const fetchProductDetails = createAsyncThunk("products/fetchProductDetails", async ({ id }) => {
-    const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/products/${id}`);
-
-    return response.data;
-});
+export const fetchProductDetails = createAsyncThunk('products/fetchProductDetails', async ({ id }, { rejectWithValue }) => {
+    try {
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/products/${id}`);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(
+            error.response?.data?.message || 'Không thể lấy chi tiết sản phẩm'
+        );
+    }
+}
+);
 
 export const createProduct = createAsyncThunk("products/createProduct", async ({ productData }) => {
     const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/products`, productData,
@@ -134,40 +140,40 @@ const productSlice = createSlice({
             state.loading = true;
             state.error = null;
         })
-        .addCase(createProduct.fulfilled, (state, action) => {
-            state.loading = false;
-            state.products.push(action.payload);
-        })
-        .addCase(createProduct.rejected, (state, action) => {
-            state.loading = false;
-            state.error = action.error.message;
-        }).addCase(updateProduct.pending, (state) => {
-            state.loading = true;
-            state.error = null;
-        }).addCase(updateProduct.fulfilled, (state, action) => {
-            state.loading = false;
-            const updatedProduct = action.payload;
-            const index = state.products.findIndex(
-                (product) => product._id === updatedProduct._id
-            );
-            if(index != -1){
-                state.products[index] = updatedProduct;
-            }
-        }).addCase(updateProduct.rejected, (state, action) => {
-            state.loading = false;
-            state.error = action.error.message;
-        }).addCase(fetchSimlarProducts.pending, (state) => {
-            state.loading = true;
-            state.error = null;
-        }).addCase(fetchSimlarProducts.fulfilled, (state, action) => {
-            state.loading = false;
-            state.similarProducts = action.payload;
-        }).addCase(fetchSimlarProducts.rejected, (state, action) => {
-            state.loading = false;
-            state.error = action.error.message;
-        });
+            .addCase(createProduct.fulfilled, (state, action) => {
+                state.loading = false;
+                state.products.push(action.payload);
+            })
+            .addCase(createProduct.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.error.message;
+            }).addCase(updateProduct.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            }).addCase(updateProduct.fulfilled, (state, action) => {
+                state.loading = false;
+                const updatedProduct = action.payload;
+                const index = state.products.findIndex(
+                    (product) => product._id === updatedProduct._id
+                );
+                if (index != -1) {
+                    state.products[index] = updatedProduct;
+                }
+            }).addCase(updateProduct.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.error.message;
+            }).addCase(fetchSimlarProducts.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            }).addCase(fetchSimlarProducts.fulfilled, (state, action) => {
+                state.loading = false;
+                state.similarProducts = action.payload;
+            }).addCase(fetchSimlarProducts.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.error.message;
+            });
     },
 });
 
-export const {setFilters, clearFilters} = productSlice.actions;
+export const { setFilters, clearFilters } = productSlice.actions;
 export default productSlice.reducer

@@ -10,7 +10,7 @@ const ProductGrid = ({ products, loading, error }) => {
             </div>
         );
     }
-    
+
     if (error) {
         return (
             <div className="text-center py-12">
@@ -18,7 +18,7 @@ const ProductGrid = ({ products, loading, error }) => {
             </div>
         );
     }
-    
+
     if (!products || products.length === 0) {
         return (
             <div className="text-center py-12">
@@ -26,7 +26,7 @@ const ProductGrid = ({ products, loading, error }) => {
             </div>
         );
     }
-    
+
     return (
         <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6'>
             {products.map((product) => (
@@ -34,7 +34,7 @@ const ProductGrid = ({ products, loading, error }) => {
                     <div className='bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200'>
                         <div className='w-full h-96 mb-4 aspect-[3/4] overflow-hidden rounded-t-lg relative'>
                             {product.images && product.images.length > 0 ? (
-                                <img 
+                                <img
                                     src={product.images[0].url}
                                     alt={product.images[0].altText || product.name}
                                     className='w-full h-full object-cover group-hover:scale-105 transition-transform duration-300'
@@ -44,18 +44,17 @@ const ProductGrid = ({ products, loading, error }) => {
                                     <span className="text-gray-400">Không có hình ảnh</span>
                                 </div>
                             )}
-                            
-                            {/* Badge cho sản phẩm giảm giá */}
+
                             {product.discountPrice && product.discountPrice < product.price && (
                                 <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
                                     -{Math.round(((product.price - product.discountPrice) / product.price) * 100)}%
                                 </div>
                             )}
                         </div>
-                        
+
                         <div className='p-3'>
                             <h3 className='text-sm font-medium text-gray-800 mb-1 line-clamp-2 h-10'>{product.name}</h3>
-                            
+
                             <div className="flex items-center mt-2">
                                 {product.discountPrice && product.discountPrice < product.price ? (
                                     <>

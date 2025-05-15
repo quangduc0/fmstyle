@@ -17,7 +17,7 @@ router.post("/register", async (req, res) => {
         user = new User ({name, email, password});
         await user.save();
 
-        // Tạo dữ liệu cho Jiso Web Token
+        // Tạo dữ liệu cho Jison Web Token
         const payload = {
             user: {
                 id: user._id,

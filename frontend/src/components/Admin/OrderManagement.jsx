@@ -2,7 +2,9 @@ import React, { useEffect } from 'react'
 import { formatter } from '../../utils/fomater'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom';
-import { fetchAllOrders, updateOrderStatus } from '../../redux/slices/adminOrderSlice';
+import { fetchAllOrders, updateOrderStatus, updatePaymentStatus } from '../../redux/slices/adminOrderSlice';
+import { toast } from 'sonner';
+import { paymentStatusMap } from '../../utils/paymentStatusMap';
 
 const OrderManagement = () => {
     const dispatch = useDispatch();
@@ -23,6 +25,16 @@ const OrderManagement = () => {
         dispatch(updateOrderStatus({id: orderId, status}));
     }
 
+    const handlePaymentStatusChange = (orderId, paymentStatus) => {
+        dispatch(updatePaymentStatus({id: orderId, paymentStatus}))
+            .then(() => {
+                toast.success("Cập nhật trạng thái thanh toán thành công");
+            })
+            .catch((err) => {
+                toast.error("Cập nhật trạng thái thanh toán thất bại");
+            });
+    }
+
     if(loading) return <p>Đang tải...</p>;
     if(error) return <p>Lỗi: {error}</p>;
 
@@ -37,7 +49,9 @@ const OrderManagement = () => {
                         <th className='py-3 px-4'>Mã đơn hàng</th>
                         <th className='py-3 px-4'>Khách hàng</th>
                         <th className='py-3 px-4'>Tổng giá</th>
+                        <th className='py-3 px-4'>Phương thức</th>
                         <th className='py-3 px-4'>Trạng thái</th>
+                        <th className='py-3 px-4'>Thanh toán</th>
                         <th className='py-3 px-4'>Thao tác</th>
                     </tr>
                 </thead>
@@ -52,6 +66,9 @@ const OrderManagement = () => {
                                 <td className='p-4'>{order.user.name}</td>
                                 <td className='p-4'>{formatter(order.totalPrice)}</td>
                                 <td className='p-4'>
+                                    {order.paymentMethod === "cod" ? "Thanh toán khi nhận hàng" : order.paymentMethod}
+                                </td>
+                                <td className='p-4'>
                                     <select value={order.status}
                                      onChange={(e) => handleStatusChange(order._id, e.target.value)}
                                      className='bg-gray-50 border-gray-300 text-gray-900 text-sm rounded-lg
@@ -63,6 +80,36 @@ const OrderManagement = () => {
                                     </select>
                                 </td>
                                 <td className='p-4'>
+                                    <div className="flex flex-col items-start">
+                                        <span className={`mb-2 px-2 py-1 rounded text-sm ${
+                                            order.paymentStatus === "paid" 
+                                                ? "bg-green-100 text-green-800" 
+                                                : order.paymentStatus === "unpaid" 
+                                                ? "bg-red-100 text-red-800" 
+                                                : "bg-yellow-100 text-yellow-800"
+                                        }`}>
+                                            {paymentStatusMap[order.paymentStatus]}
+                                        </span>
+                                        
+                                        <select 
+                                            value=""
+                                            onChange={(e) => {
+                                                if (e.target.value) {
+                                                    handlePaymentStatusChange(order._id, e.target.value);
+                                                    e.target.value = "";
+                                                }
+                                            }}
+                                            className="mt-1 border rounded px-2 py-1 text-sm"
+                                        >
+                                            <option value="">Cập nhật</option>
+                                            <option value="pending">Đang xử lý</option>
+                                            <option value="paid">Đã thanh toán</option>
+                                            <option value="unpaid">Chưa thanh toán</option>
+                                            <option value="failed">Thanh toán thất bại</option>
+                                        </select>
+                                    </div>
+                                </td>
+                                <td className='p-4'>
                                     <button onClick={() => handleStatusChange(order._id, "Shipped")}
                                      className='bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600'>
                                         Xác nhận giao hàng
@@ -72,7 +119,7 @@ const OrderManagement = () => {
                         ))
                     ) : (
                         <tr>
-                            <td colSpan={5} className='p-4 text-center text-gray-500'>
+                            <td colSpan={7} className='p-4 text-center text-gray-500'>
                                 Không tìm thấy đơn hàng.
                             </td>
                         </tr>

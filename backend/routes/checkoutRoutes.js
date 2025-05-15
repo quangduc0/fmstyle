@@ -13,6 +13,7 @@ router.post("/", protect, async (req, res) => {
         checkoutItems, 
         shippingAddress, 
         paymentMethod,
+        paymentStatus,
         totalPrice
     } = req.body;
 
@@ -21,13 +22,18 @@ router.post("/", protect, async (req, res) => {
     }
 
     try {
+        let initialPaymentStatus = paymentStatus || "pending";
+        if (paymentMethod === "cod") {
+            initialPaymentStatus = "unpaid";
+        }
+
         const newCheckout = await Checkout.create({
             user: req.user._id,
             checkoutItems: checkoutItems,
             shippingAddress,
             paymentMethod,
             totalPrice,
-            paymentStatus: "Pending",
+            paymentStatus: initialPaymentStatus,
             isPaid: false,
         });
         console.log(`Thanh toán tạo cho người dùng: ${req.user._id}`);
@@ -71,12 +77,16 @@ router.put("/:id/pay", protect, async (req, res) => {
 router.post("/:id/finalize", protect, async (req, res) => {
     try {
         const checkout = await Checkout.findById(req.params.id);
-
         if (!checkout) {
             return res.status(404).json({message: "Không tìm thấy thanh toán"});
         }
 
-        if (checkout.isPaid && !checkout.isFinalized) {
+        if ((checkout.isPaid || checkout.paymentMethod === "cod") && !checkout.isFinalized) {
+            // Xác định trạng thái thanh toán cho đơn hàng
+            const orderPaymentStatus = checkout.isPaid ? "paid" : (
+                checkout.paymentMethod === "cod" ? "unpaid" : checkout.paymentStatus
+            );
+            
             //Tạo đơn hàng cuối cùng dựa trên chi tiết thanh toán
             const finalOrder = await Order.create({
                 user: checkout.user,
@@ -84,19 +94,20 @@ router.post("/:id/finalize", protect, async (req, res) => {
                 shippingAddress: checkout.shippingAddress,
                 paymentMethod: checkout.paymentMethod,
                 totalPrice: checkout.totalPrice,
-                isPaid: true,
+                isPaid: checkout.isPaid,
                 paidAt: checkout.paidAt,
                 isDelivered: false,
-                paymentStatus: "paid",
+                paymentStatus: orderPaymentStatus,
                 paymentDetails: checkout.paymentDetails,
             });
-
             // Đánh dấu thanh toán là đã hoàn tất
             checkout.isFinalized = true;
             checkout.finalizedAt = Date.now();
             await checkout.save();
+            
             // Xóa giỏ hàng được liên kết với người dùng
             await Cart.findOneAndDelete({user: checkout.user});
+            
             res.status(201).json(finalOrder);
         } else if (checkout.isFinalized) {
             res.status(400).json({message: "Thanh toán đã hoàn tất"});

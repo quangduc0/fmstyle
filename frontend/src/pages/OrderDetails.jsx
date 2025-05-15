@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { formatter } from './../utils/fomater'
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchOrderDetails } from '../redux/slices/orderSlice';
+import { paymentStatusMap } from "../utils/paymentStatusMap";
 
 const OrderDetails = () => {
     const {id} = useParams();
@@ -31,11 +32,15 @@ const OrderDetails = () => {
                         </p>
                     </div>
                     <div className='flex flex-col items-start sm:items-end mt-4 sm:mt-0'>
-                        <span className={`${orderDetails.isPaid 
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"} 
-                        px-3 py-1 rounded-full text-sm font-medium mb-2`}>
-                            {orderDetails.isPaid ? "Đã xác nhận" : "Đang chờ"}
+                        <span className={`${
+                            orderDetails.paymentStatus === "paid" 
+                                ? "bg-green-100 text-green-700"
+                                : orderDetails.paymentStatus === "unpaid" 
+                                ? "bg-red-100 text-red-700"
+                                : "bg-yellow-100 text-yellow-700"
+                            } 
+                            px-3 py-1 rounded-full text-sm font-medium mb-2`}>
+                            {paymentStatusMap[orderDetails.paymentStatus]}
                         </span>
                         <span className={`${orderDetails.isDelivered 
                         ? "bg-green-100 text-green-700"
@@ -49,15 +54,26 @@ const OrderDetails = () => {
                 <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 mb-8'>
                     <div>
                         <h4 className='text-lg font-semibold mb-2'>Thông tin giao dịch</h4>
-                        <p>Phương thức thanh toán: {orderDetails.paymentMethod}</p>
-                        <p>Trạng thái: {orderDetails.isPaid ? "Đã thanh toán" : "Chưa thanh toán"}</p>
+                        <p>Phương thức thanh toán: {
+                            orderDetails.paymentMethod === "cod" 
+                                ? "Thanh toán khi giao hàng" 
+                                : orderDetails.paymentMethod
+                        }</p>
+                        <p>Trạng thái thanh toán: <span className={`inline-block px-2 py-1 rounded ${
+                            orderDetails.paymentStatus === "paid" 
+                                ? "bg-green-100 text-green-700"
+                                : orderDetails.paymentStatus === "unpaid" 
+                                ? "bg-red-100 text-red-700"
+                                : "bg-yellow-100 text-yellow-700"
+                            }`}>
+                            {paymentStatusMap[orderDetails.paymentStatus]}
+                        </span></p>
                     </div>
                     <div>
                         <h4 className='text-lg font-semibold mb-2'>Thông tin giao hàng</h4>
-                        <p>Phương thức giao hàng: {orderDetails.shippingMethod}</p>
-                        <p>
-                            Địa chỉ: {`${orderDetails.shippingAddress.city}, ${orderDetails.shippingAddress.country}`}
-                        </p>
+                        <p>Địa chỉ: {`${orderDetails.shippingAddress.address}`}</p>
+                        <p>Thành phố: {`${orderDetails.shippingAddress.city}`}</p>
+                        <p>Quốc gia: {`${orderDetails.shippingAddress.country}`}</p>
                     </div>
                 </div>
 
@@ -94,7 +110,7 @@ const OrderDetails = () => {
                 </div>
 
                 <Link to="/my-orders" className='text-blue-500 hover:underline'>
-                    Quay lại đơn hàng của tôi
+                    Đơn hàng khác
                 </Link>
             </div>
         )}

@@ -1,5 +1,5 @@
 import React from 'react'
-import { FaBoxOpen, FaClipboardList, FaPlus, FaSignOutAlt, FaStore, FaUser } from 'react-icons/fa'
+import { FaBoxOpen, FaClipboardList, FaPercentage, FaPlus, FaSignOutAlt, FaStore, FaUser } from 'react-icons/fa'
 import { useDispatch } from 'react-redux';
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { clearCart } from '../../redux/slices/cartSlice';
@@ -49,6 +49,13 @@ const AdminSidebar = () => {
                         : "text-gray-300 hover:bg-gray-700 hover:text-white py-3 px-4 rounded flex items-center space-x-2"}>
                     <FaClipboardList />
                     <span>Đơn hàng</span>
+                </NavLink>
+                <NavLink to="/admin/promotions"
+                    className={({ isActive }) => isActive
+                        ? "bg-gray-700 text-white py-3 px-4 rounded flex items-center space-x-2"
+                        : "text-gray-300 hover:bg-gray-700 hover:text-white py-3 px-4 rounded flex items-center space-x-2"}>
+                    <FaPercentage />
+                    <span>Khuyến mãi</span>
                 </NavLink>
                 <NavLink to="/"
                     className={({ isActive }) => isActive

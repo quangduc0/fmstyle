@@ -18,14 +18,20 @@ import UserManagement from './components/Admin/UserManagement';
 import ProductManagement from './components/Admin/ProductManagement';
 import EditProduct from './components/Admin/EditProduct';
 import OrderManagement from './components/Admin/OrderManagement';
+import PromotionManagement from './components/Admin/PromotionManagement';
 
 import { Provider } from "react-redux";
 import store from "./redux/store";
 import ProtectedRoute from './components/Common/ProtectedRoute';
 import AddProduct from './components/Admin/AddProduct';
+import { PayPalScriptProvider } from '@paypal/react-paypal-js';
 
 const App = () => {
   return (
+    <PayPalScriptProvider options={{
+      "client-id": "ATcdk87yO8pDTuzsiLc_LhgDBGC09LcoMMY4Hudgf6R5wOFiyd3m5LrCOAhW9nJTDfCRAVV1hh5EesXx",
+      "components": "buttons"
+    }}>
     <Provider store={store}>
       <BrowserRouter>
         <Toaster position="top-right" />
@@ -54,10 +60,12 @@ const App = () => {
             <Route path='products/add' element={<AddProduct />} />
             <Route path='products/:id/edit' element={<EditProduct />} />
             <Route path='orders' element={<OrderManagement />} />
+            <Route path="/admin/promotions" element={<PromotionManagement />} />
           </Route>
         </Routes>
       </BrowserRouter>
     </Provider>
+    </PayPalScriptProvider>
   )
 }
 

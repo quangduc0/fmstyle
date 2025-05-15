@@ -12,6 +12,7 @@ const subscribeRoutes = require("./routes/subcriberRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const productAdminRoutes = require("./routes/productAdminRoutes");
 const orderAdminRoutes = require("./routes/adminOrderRoutes");
+const promotionRoutes = require('./routes/promotionRoutes');
 
 const app = express();
 app.use(express.json());
@@ -41,6 +42,7 @@ app.use("/api", subscribeRoutes);
 app.use("/api/admin/users", adminRoutes);
 app.use("/api/admin/products", productAdminRoutes);
 app.use("/api/admin/orders", orderAdminRoutes);
+app.use("/api/promotions", promotionRoutes)
 
 app.listen(PORT, () => {
     console.log(`Máy chủ đang chạy trên http://localhost:${PORT}`); 

@@ -27,7 +27,6 @@ const NewArrivals = () => {
         fetchNewArrivals();
     }, []);
 
-    // Các hàm xử lý sự kiện giữ nguyên
     const handleMouseDown = (e) => {
         setIsDragging(true);
         setStartX(e.pageX - scrollRef.current.offsetLeft);

@@ -15,7 +15,7 @@ const GenderCollectonSection = () => {
                     <h2 className='text-2xl font-bold text-gray-900 mb-3'>
                         Thời trang nữ
                     </h2>
-                    <Link to='/collections/all?gender=Women'
+                    <Link to='/collections/all?gender=Nữ'
                         className='text-gray-900 underline'>
                             Khám phá ngay
                     </Link>
@@ -29,7 +29,7 @@ const GenderCollectonSection = () => {
                     <h2 className='text-2xl font-bold text-gray-900 mb-3'>
                         Thời trang nam
                     </h2>
-                    <Link to='/collections/all?gender=Men'
+                    <Link to='/collections/all?gender=Nam'
                         className='text-gray-900 underline'>
                             Khám phá ngay
                     </Link>

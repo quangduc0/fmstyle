@@ -1,5 +1,6 @@
 const express = require("express");
 const Product = require("../models/Product");
+const Promotion = require("../models/Promotion");
 const { protect, admin } = require("../middleware/authMiddleware");
 
 const router = express.Router();
@@ -212,6 +213,34 @@ router.get("/", async (req, res) => {
         }
 
         let products = await Product.find(query).sort(sort).limit(Number(limit) || 0);
+
+        const now = new Date();
+        const activePromotions = await Promotion.find({
+            isActive: true,
+            startDate: { $lte: now },
+            endDate: { $gte: now }
+        });
+
+        if (activePromotions.length > 0) {
+            products = products.map(product => {
+                const productObj = product.toObject();
+
+                const applicablePromotion = activePromotions.find(promo => {
+                    return promo.categories.includes('All') ||
+                        (product.category && promo.categories.includes(product.category)) ||
+                        (product.gender && promo.categories.includes(product.gender));
+                });
+
+                if (applicablePromotion) {
+                    const discountAmount = (product.price * (applicablePromotion.discountPercent / 100));
+                    productObj.discountPrice = Math.floor(product.price - discountAmount);
+                    productObj.discountPercent = applicablePromotion.discountPercent;
+                }
+
+                return productObj;
+            });
+        }
+
         res.json(products);
     } catch (error) {
         console.error(error);
@@ -238,7 +267,7 @@ router.get("/best-seller", async (req, res) => {
 // GET /api/products/new-arrivals (Xuất 8 sản phẩm mới nhất)
 router.get("/new-arrivals", async (req, res) => {
     try {
-        const newArrivals = await Product.find().sort({createdAt: -1}).limit(8);
+        const newArrivals = await Product.find().sort({ createdAt: -1 }).limit(8);
         res.json(newArrivals);
     } catch (error) {
         console.error(error);
@@ -258,11 +287,33 @@ router.get("/similar/:id", async (req, res) => {
             return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
         }
 
-        const similarProducts = await Product.find({
+        let similarProducts = await Product.find({
             _id: { $ne: id }, // loại trừ Id sản phẩm hiện tại
             gender: product.gender,
             category: product.category,
         }).limit(4);
+
+        const now = new Date();
+        const activePromotions = await Promotion.find({
+            isActive: true,
+            startDate: { $lte: now },
+            endDate: { $gte: now }
+        });
+
+        similarProducts = similarProducts.map(p => {
+            const productObj = p.toObject();
+            const promo = activePromotions.find(pr =>
+                pr.categories.includes("All") ||
+                pr.categories.includes(productObj.category) ||
+                pr.categories.includes(productObj.gender)
+            );
+            if (promo) {
+                const discountAmount = productObj.price * promo.discountPercent / 100;
+                productObj.discountPrice = Math.floor(productObj.price - discountAmount);
+                productObj.discountPercent = promo.discountPercent;
+            }
+            return productObj;
+        });
 
         res.json(similarProducts);
     } catch (error) {
@@ -276,7 +327,30 @@ router.get("/:id", async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
         if (product) {
-            res.json(product);
+            const productObj = product.toObject();
+
+            const now = new Date();
+            const activePromotions = await Promotion.find({
+                isActive: true,
+                startDate: { $lte: now },
+                endDate: { $gte: now }
+            });
+
+            if (activePromotions.length > 0) {
+                const applicablePromotion = activePromotions.find(promo => {
+                    return promo.categories.includes('All') ||
+                        (product.category && promo.categories.includes(product.category)) ||
+                        (product.gender && promo.categories.includes(product.gender));
+                });
+
+                if (applicablePromotion) {
+
+                    const discountAmount = (product.price * (applicablePromotion.discountPercent / 100));
+                    productObj.discountPrice = Math.floor(product.price - discountAmount);
+                    productObj.discountPercent = applicablePromotion.discountPercent;
+                }
+            }
+            res.json(productObj);
         } else {
             res.status(404).json({ message: "Không tìm thấy sản phẩm" });
         }

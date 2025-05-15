@@ -32,22 +32,22 @@ const Footer = () => {
                 <h3 className='text-lg text-gray-800 mb-4'>Cửa hàng</h3>
                 <ul className='space-y-2 text-gray-600'>
                     <li>
-                        <Link to="#" className='hover:text-gray-600 transition-colors'>
+                        <Link to="/collections/all?gender=Nam&category=Top Wear" className='hover:text-gray-600 transition-colors'>
                             Thời trang nam – Áo
                         </Link>
                     </li>
                     <li>
-                        <Link to="#" className='hover:text-gray-600 transition-colors'>
+                        <Link to="/collections/all?gender=Nữ&category=Top Wear" className='hover:text-gray-600 transition-colors'>
                             Thời trang nữ – Áo
                         </Link>
                     </li>
                     <li>
-                        <Link to="#" className='hover:text-gray-600 transition-colors'>
+                        <Link to="/collections/all?gender=Nam&category=Bottom Wear" className='hover:text-gray-600 transition-colors'>
                             Quần nam phong cách
                         </Link>
                     </li>
                     <li>
-                        <Link to="#" className='hover:text-gray-600 transition-colors'>
+                        <Link to="/collections/all?gender=Nữ&category=Bottom Wear" className='hover:text-gray-600 transition-colors'>
                             Trang phục nữ – Quần & váy
                         </Link>
                     </li>
