@@ -38,6 +38,14 @@ const orderSchema = new mongoose.Schema(
         },
         orderItems: [orderItemSchema],
         shippingAddress: {
+            firstName: {
+                type: String,
+                required: true
+            },
+            lastName: {
+                type: String,
+                required: true
+            },
             address: {
                 type: String,
                 required: true
@@ -52,6 +60,10 @@ const orderSchema = new mongoose.Schema(
             },
             country: {
                 type: String,
+                required: true
+            },
+            phone: {
+                type: Number,
                 required: true
             },
         },
@@ -87,6 +99,10 @@ const orderSchema = new mongoose.Schema(
             enum: ["Processing", "Shipped", "Delivered", "Cancelled"],
             default: "Processing",
         },
+        inventoryUpdated: {
+            type: Boolean,
+            default: false
+        }
     },
     { timestamps: true }
 )

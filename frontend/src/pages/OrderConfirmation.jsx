@@ -104,7 +104,7 @@ const OrderConfirmation = () => {
                         <h4 className='text-lg font-semibold mb-2'>Phương thức thanh toán</h4>
                         <p className='text-gray-600'>
                             {checkout.paymentMethod === "cod" 
-                                ? "Thanh toán khi nhận hàng (COD)" 
+                                ? "Thanh toán khi nhận hàng" 
                                 : checkout.paymentMethod}
                         </p>
                     </div>

@@ -17,7 +17,7 @@ const Hero = () => {
                     <p className="text-sm font-bold bg-black bg-opacity-20 px-4 py-2 tracking-tighter md:text-lg w-fit rounded">
                     Khám phá những bộ trang phục của chúng tôi với dịch vụ vận chuyển nhanh chóng trên toàn quốc
                     </p>
-                    <Link to="#" 
+                    <Link to="/collections/all" 
                         className="bg-white text-gray-950 px-6 py-2 rounded-md text-lg hover:bg-gray-200 transition duration-300 shadow-md">
                         Khám phá ngay
                     </Link>

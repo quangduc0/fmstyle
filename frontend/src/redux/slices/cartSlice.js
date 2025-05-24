@@ -3,7 +3,6 @@ import axios from "axios";
 
 const loadCartFromStorage = () => {
     const storedCart = localStorage.getItem("cart");
-
     return storedCart ? JSON.parse(storedCart) : {products: []};
 };
 
@@ -26,7 +25,6 @@ export const fetchCart = createAsyncThunk("cart/fetchCart", async ({userId, gues
 export const addToCart = createAsyncThunk("cart/addToCart", async ({productId, quantity, size, color, guestId, userId}, {rejectWithValue}) => {
     try {
         const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/cart`, {productId, quantity, size, color, guestId, userId});
-
         return response.data;
     } catch (error) {
         return rejectWithValue(error.response.data);
@@ -36,7 +34,6 @@ export const addToCart = createAsyncThunk("cart/addToCart", async ({productId, q
 export const updateCartItemQuantity = createAsyncThunk("cart/updateCartItemQuantity", async ({productId, quantity, guestId, userId, size, color}, {rejectWithValue}) => {
     try {
         const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/cart`, {productId, quantity, guestId, userId, size, color});
-
         return response.data;
     } catch (error) {
         return rejectWithValue(error.response.data);
@@ -71,73 +68,167 @@ export const mergeCart = createAsyncThunk("cart/mergeCart", async ({guestId, use
     }
 });
 
+export const cleanupExpiredCart = createAsyncThunk("cart/cleanupExpiredCart", async ({userId, guestId}, {rejectWithValue}) => {
+    try {
+        const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/cart/cleanup`, {userId, guestId});
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response.data);
+    }
+});
+
 const cartSlice = createSlice({
     name: "cart",
     initialState: {
         cart: loadCartFromStorage(),
         loading: false,
         error: null,
+        expiredItems: [],
+        expirationNotified: false,
     },
     reducers: {
         clearCart: (state) => {
             state.cart = {products: []};
             localStorage.removeItem("cart");
         },
+        clearExpiredItems: (state) => {
+            state.expiredItems = [];
+            state.expirationNotified = false;
+        },
+        setExpirationNotified: (state, action) => {
+            state.expirationNotified = action.payload;
+        },
     },
-    extraReducers: (bulder) => {
-        bulder.addCase(fetchCart.pending, (state) => {
+    extraReducers: (builder) => {
+        builder
+        .addCase(fetchCart.pending, (state) => {
             state.loading = true;
             state.error = null;
-        }).addCase(fetchCart.fulfilled, (state, action) => {
+        })
+        .addCase(fetchCart.fulfilled, (state, action) => {
             state.loading = false;
-            state.cart = action.payload;
-            saveCartToStorage(action.payload);
-        }).addCase(fetchCart.rejected, (state, action) => {
+            const cartData = action.payload.cart || action.payload;
+            const removedItems = action.payload.removedItems;
+            
+            state.cart = cartData;
+            saveCartToStorage(cartData);
+            
+            if (removedItems && removedItems.length > 0) {
+                state.expiredItems = removedItems;
+                state.expirationNotified = false;
+            }
+        })
+        .addCase(fetchCart.rejected, (state, action) => {
             state.loading = false;
             state.error = action.error.message || "Lấy giỏ hàng thất bại";
-        }).addCase(addToCart.pending, (state) => {
+        })
+        .addCase(addToCart.pending, (state) => {
             state.loading = true;
             state.error = null;
-        }).addCase(addToCart.fulfilled, (state, action) => {
+        })
+        .addCase(addToCart.fulfilled, (state, action) => {
             state.loading = false;
-            state.cart = action.payload;
-            saveCartToStorage(action.payload);
-        }).addCase(addToCart.rejected, (state, action) => {
+            const cartData = action.payload.cart || action.payload;
+            const removedItems = action.payload.removedItems;
+            
+            state.cart = cartData;
+            saveCartToStorage(cartData);
+            
+            if (removedItems && removedItems.length > 0) {
+                state.expiredItems = removedItems;
+                state.expirationNotified = false;
+            }
+        })
+        .addCase(addToCart.rejected, (state, action) => {
             state.loading = false;
             state.error = action.payload?.message || "Thêm vào giỏ hàng thất bại";
-        }).addCase(updateCartItemQuantity.pending, (state) => {
+        })
+        .addCase(updateCartItemQuantity.pending, (state) => {
             state.loading = true;
             state.error = null;
-        }).addCase(updateCartItemQuantity.fulfilled, (state, action) => {
+        })
+        .addCase(updateCartItemQuantity.fulfilled, (state, action) => {
             state.loading = false;
-            state.cart = action.payload;
-            saveCartToStorage(action.payload);
-        }).addCase(updateCartItemQuantity.rejected, (state, action) => {
+            const cartData = action.payload.cart || action.payload;
+            const removedItems = action.payload.removedItems;
+            
+            state.cart = cartData;
+            saveCartToStorage(cartData);
+            
+            if (removedItems && removedItems.length > 0) {
+                state.expiredItems = removedItems;
+                state.expirationNotified = false;
+            }
+        })
+        .addCase(updateCartItemQuantity.rejected, (state, action) => {
             state.loading = false;
-            state.error = action.payload?.message || "Cập nhập số lượng đơn hàng thất bại";
-        }).addCase(removeFromCart.pending, (state) => {
+            state.error = action.payload?.message || "Cập nhật số lượng đơn hàng thất bại";
+        })
+        .addCase(removeFromCart.pending, (state) => {
             state.loading = true;
             state.error = null;
-        }).addCase(removeFromCart.fulfilled, (state, action) => {
+        })
+        .addCase(removeFromCart.fulfilled, (state, action) => {
             state.loading = false;
-            state.cart = action.payload;
-            saveCartToStorage(action.payload);
-        }).addCase(removeFromCart.rejected, (state, action) => {
+            const cartData = action.payload.cart || action.payload;
+            const removedItems = action.payload.removedItems;
+            
+            state.cart = cartData;
+            saveCartToStorage(cartData);
+            
+            if (removedItems && removedItems.length > 0) {
+                state.expiredItems = removedItems;
+                state.expirationNotified = false;
+            }
+        })
+        .addCase(removeFromCart.rejected, (state, action) => {
             state.loading = false;
             state.error = action.payload?.message || "Xóa đơn hàng thất bại";
-        }).addCase(mergeCart.pending, (state) => {
+        })
+        .addCase(mergeCart.pending, (state) => {
             state.loading = true;
             state.error = null;
-        }).addCase(mergeCart.fulfilled, (state, action) => {
+        })
+        .addCase(mergeCart.fulfilled, (state, action) => {
             state.loading = false;
-            state.cart = action.payload;
-            saveCartToStorage(action.payload);
-        }).addCase(mergeCart.rejected, (state, action) => {
+            const cartData = action.payload.cart || action.payload;
+            const removedItems = action.payload.removedItems;
+            
+            state.cart = cartData;
+            saveCartToStorage(cartData);
+            
+            if (removedItems && removedItems.length > 0) {
+                state.expiredItems = removedItems;
+                state.expirationNotified = false;
+            }
+        })
+        .addCase(mergeCart.rejected, (state, action) => {
             state.loading = false;
             state.error = action.payload?.message || "Hợp nhất giỏ hàng thất bại";
+        })
+        .addCase(cleanupExpiredCart.pending, (state) => {
+            state.loading = true;
+            state.error = null;
+        })
+        .addCase(cleanupExpiredCart.fulfilled, (state, action) => {
+            state.loading = false;
+            const cartData = action.payload.cart || action.payload;
+            const removedItems = action.payload.removedItems;
+            
+            state.cart = cartData;
+            saveCartToStorage(cartData);
+            
+            if (removedItems && removedItems.length > 0) {
+                state.expiredItems = removedItems;
+                state.expirationNotified = false;
+            }
+        })
+        .addCase(cleanupExpiredCart.rejected, (state, action) => {
+            state.loading = false;
+            state.error = action.payload?.message || "Dọn dẹp giỏ hàng thất bại";
         });
     }
 });
 
-export const {clearCart} = cartSlice.actions;
+export const { clearCart, clearExpiredItems, setExpirationNotified } = cartSlice.actions;
 export default cartSlice.reducer;

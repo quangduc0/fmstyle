@@ -38,6 +38,14 @@ const checkoutSchema = new mongoose.Schema(
         },
         checkoutItems: [checkoutItemSchema],
         shippingAddress: {
+            firstName: {
+                type: String,
+                required: true
+            },
+            lastName: {
+                type: String,
+                required: true
+            },
             address: {
                 type: String,
                 required: true
@@ -54,6 +62,10 @@ const checkoutSchema = new mongoose.Schema(
                 type: String,
                 required: true
             },
+            phone: {
+                type: Number,
+                required: true
+            }
         },
         paymentMethod: {
             type: String,

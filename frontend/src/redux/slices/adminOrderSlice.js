@@ -1,11 +1,11 @@
-import {createSlice, createAsyncThunk} from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-export const fetchAllOrders = createAsyncThunk("adminOrders/fetchAllOrders", async (_, {rejectWithValue}) => {
+export const fetchAllOrders = createAsyncThunk("adminOrders/fetchAllOrders", async (_, { rejectWithValue }) => {
     try {
         const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin/orders`,
             {
-                headers: {Authorization: `Bearer ${localStorage.getItem("userToken")}`},
+                headers: { Authorization: `Bearer ${localStorage.getItem("userToken")}` },
             },
         );
         return response.data;
@@ -14,11 +14,11 @@ export const fetchAllOrders = createAsyncThunk("adminOrders/fetchAllOrders", asy
     }
 });
 
-export const updateOrderStatus = createAsyncThunk("adminOrders/updateOrderStatus", async ({id, status}, {rejectWithValue}) => {
+export const updateOrderStatus = createAsyncThunk("adminOrders/updateOrderStatus", async ({ id, status }, { rejectWithValue }) => {
     try {
-        const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/admin/orders/${id}`,{status},
+        const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/admin/orders/${id}`, { status },
             {
-                headers: {Authorization: `Bearer ${localStorage.getItem("userToken")}`},
+                headers: { Authorization: `Bearer ${localStorage.getItem("userToken")}` },
             },
         );
         return response.data;
@@ -27,13 +27,12 @@ export const updateOrderStatus = createAsyncThunk("adminOrders/updateOrderStatus
     }
 });
 
-export const updatePaymentStatus = createAsyncThunk("adminOrders/updatePaymentStatus", async ({id, paymentStatus}, {rejectWithValue}) => {
+export const updatePaymentStatus = createAsyncThunk("adminOrders/updatePaymentStatus", async ({ id, paymentStatus }, { rejectWithValue }) => {
     try {
-        const response = await axios.put(
-            `${import.meta.env.VITE_BACKEND_URL}/api/admin/orders/${id}/payment`,
-            {paymentStatus},
+        const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/admin/orders/${id}/payment`,
+            { paymentStatus },
             {
-                headers: {Authorization: `Bearer ${localStorage.getItem("userToken")}`},
+                headers: { Authorization: `Bearer ${localStorage.getItem("userToken")}` },
             }
         );
         return response.data;
@@ -42,11 +41,32 @@ export const updatePaymentStatus = createAsyncThunk("adminOrders/updatePaymentSt
     }
 });
 
-export const deleteOrder = createAsyncThunk("adminOrders/deleteOrder", async (id, {rejectWithValue}) => {
+export const updateProductInventory = createAsyncThunk(
+    "adminOrders/updateProductInventory",
+    async (orderId, { rejectWithValue }) => {
+        try {
+            console.log("Gọi API cập nhật tồn kho với orderId:", orderId);
+            const response = await axios.post(
+                `${import.meta.env.VITE_BACKEND_URL}/api/orders/${orderId}/update-inventory`,
+                {},
+                {
+                    headers: { Authorization: `Bearer ${localStorage.getItem("userToken")}` },
+                }
+            );
+            return response.data;
+        } catch (error) {
+            console.error("Lỗi khi gọi API cập nhật tồn kho:", error.response?.data || error.message);
+            return rejectWithValue(error.response?.data || { message: error.message });
+        }
+    }
+);
+
+
+export const deleteOrder = createAsyncThunk("adminOrders/deleteOrder", async (id, { rejectWithValue }) => {
     try {
         await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/admin/orders/${id}`,
             {
-                headers: {Authorization: `Bearer ${localStorage.getItem("userToken")}`},
+                headers: { Authorization: `Bearer ${localStorage.getItem("userToken")}` },
             },
         );
         return id;
@@ -55,10 +75,26 @@ export const deleteOrder = createAsyncThunk("adminOrders/deleteOrder", async (id
     }
 });
 
+export const fetchOrdersByUser = createAsyncThunk("adminOrders/fetchOrdersByUser", async (userId, { rejectWithValue }) => {
+    try {
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/orders/user/${userId}`,
+            {
+                headers: { Authorization: `Bearer ${localStorage.getItem("userToken")}` },
+            }
+        );
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data?.message || error.message);
+    }
+}
+);
+
+
 const adminOrderSlice = createSlice({
     name: "adminOrders",
     initialState: {
         orders: [],
+        userOrders: [],
         totalOrders: 0,
         totalSales: 0,
         loading: false,
@@ -84,15 +120,30 @@ const adminOrderSlice = createSlice({
         }).addCase(updateOrderStatus.fulfilled, (state, action) => {
             const updatedOrder = action.payload;
             const orderIndex = state.orders.findIndex((order) => order._id === updatedOrder._id);
-            if(orderIndex !== -1){
+            if (orderIndex !== -1) {
                 state.orders[orderIndex] = updatedOrder;
             }
         }).addCase(updatePaymentStatus.fulfilled, (state, action) => {
             const updatedOrder = action.payload;
             const orderIndex = state.orders.findIndex((order) => order._id === updatedOrder._id);
-            if(orderIndex !== -1){
+            if (orderIndex !== -1) {
                 state.orders[orderIndex] = updatedOrder;
             }
+        }).addCase(updateProductInventory.pending, (state) => {
+            state.inventoryUpdateStatus = 'loading';
+        }).addCase(updateProductInventory.fulfilled, (state, action) => {
+            state.inventoryUpdateStatus = 'succeeded';
+        }).addCase(updateProductInventory.rejected, (state, action) => {
+            state.inventoryUpdateStatus = 'failed';
+            state.inventoryUpdateError = action.payload?.message || action.error.message;
+        }).addCase(fetchOrdersByUser.pending, (state) => {
+            state.loading = true;
+        }).addCase(fetchOrdersByUser.fulfilled, (state, action) => {
+            state.loading = false;
+            state.userOrders = action.payload;
+        }).addCase(fetchOrdersByUser.rejected, (state, action) => {
+            state.loading = false;
+            state.error = action.payload.message;
         }).addCase(deleteOrder.fulfilled, (state, action) => {
             state.orders = state.orders.filter((order) => order._id !== action.payload);
         });
