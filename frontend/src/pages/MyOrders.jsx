@@ -29,7 +29,7 @@ const MyOrders = () => {
                 <thead className='bg-gray-100 text-xs uppercase text-gray-700 text-center'>
                     <tr>
                         <th className='py-2 px-4 sm:py-3'>Hình ảnh</th>
-                        <th className='py-2 px-4 sm:py-3'>ID đơn hàng</th>
+                        <th className='py-2 px-4 sm:py-3'>Mã đơn hàng</th>
                         <th className='py-2 px-4 sm:py-3'>Thời gian đặt hàng</th>
                         <th className='py-2 px-4 sm:py-3'>Địa chỉ giao hàng</th>
                         <th className='py-2 px-4 sm:py-3'>Mặt hàng</th>

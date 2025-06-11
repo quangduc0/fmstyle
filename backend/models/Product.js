@@ -60,9 +60,6 @@ const productSchema = new mongoose.Schema(
                     type: String,
                     required: true,
                 },
-                altText: {
-                    type: String,
-                },
             },
         ],
         isFeatured: {

@@ -22,7 +22,7 @@ const cleanupExpiredItems = async (cart) => {
     }
 
     const daysAgo = new Date();
-    daysAgo.setDate(daysAgo.getDate() - 1); // Có thể thay đổi ngày để xóa sản phẩm trong giỏ hàng
+    daysAgo.setDate(daysAgo.getDate() - 5); // Có thể thay đổi ngày để xóa sản phẩm trong giỏ hàng
 
     const expiredItems = [];
     const validItems = [];

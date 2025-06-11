@@ -15,7 +15,7 @@ router.get("/", protect, admin, async (req, res) => {
     }
 });
 
-// PUT /api/admin/orders/:id (cập nhập trạng thái đơn hàng)
+// PUT /api/admin/orders/:id (cập nhật trạng thái đơn hàng)
 router.put("/:id", protect, admin, async (req, res) => {
     try {
         const order = await Order.findById(req.params.id).populate("user", "name");

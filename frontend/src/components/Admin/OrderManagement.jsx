@@ -19,6 +19,7 @@ import OrderModal from './OrderModal';
 import OrderDetailModal from './OrderDetailModal';
 import DatePickerVN from './DatePickerVN';
 import { fetchAdminProducts } from '../../redux/slices/adminProductSlice';
+import StatisticsTable from './StatisticsTable';
 
 ChartJS.register(
     CategoryScale,
@@ -72,6 +73,12 @@ const OrderManagement = () => {
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [detailModalOpen, setDetailModalOpen] = useState(false);
 
+    const [statisticsOpen, setStatisticsOpen] = useState(false);
+
+    const isValidOrderForRevenue = (order) => {
+        return order.status === 'Delivered' && order.paymentStatus === 'paid';
+    };
+
     const [chartMinWidth, setChartMinWidth] = useState('800px');
     const [chartData, setChartData] = useState({
         labels: [],
@@ -82,6 +89,15 @@ const OrderManagement = () => {
                 backgroundColor: 'rgba(53, 162, 235, 0.5)',
                 borderColor: 'rgba(53, 162, 235, 1)',
                 borderWidth: 1,
+                yAxisID: 'y',
+            },
+            {
+                label: 'Doanh thu',
+                data: [],
+                backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 1,
+                yAxisID: 'y1',
             }
         ]
     });
@@ -122,6 +138,27 @@ const OrderManagement = () => {
         return `${day}/${month}/${year}`;
     };
 
+    const countTotalProductsSold = (orderArray) => {
+        return orderArray.reduce((total, order) => {
+            if (order.orderItems && Array.isArray(order.orderItems)) {
+                return total + order.orderItems.reduce((itemTotal, item) =>
+                    itemTotal + (parseInt(item.quantity) || 0), 0);
+            }
+            else if (order.items && Array.isArray(order.items)) {
+                return total + order.items.reduce((itemTotal, item) =>
+                    itemTotal + (parseInt(item.quantity) || 0), 0);
+            }
+            return total;
+        }, 0);
+    };
+    const handleOpenStatistics = () => {
+        if (!startDateISO || !endDateISO) {
+            setDateError('Vui lòng chọn ngày bắt đầu và ngày kết thúc trước khi xem thống kê');
+            return;
+        }
+        setStatisticsOpen(true);
+    };
+
     const showModal = (title, ordersList) => {
         setModalTitle(title);
         setModalOrders(ordersList);
@@ -139,7 +176,9 @@ const OrderManagement = () => {
     useEffect(() => {
         if (orders && orders.length > 0) {
             setTotalOrders(orders.length);
-            setTotalSales(orders.reduce((total, order) => total + Number(order.totalPrice || 0), 0));
+            const validOrders = orders.filter(isValidOrderForRevenue);
+            const totalRevenue = validOrders.reduce((total, order) => total + Number(order.totalPrice || 0), 0);
+            setTotalSales(totalRevenue);
 
             const processing = orders.filter(order => order.status === 'Processing');
             const shipped = orders.filter(order => order.status === 'Shipped');
@@ -189,6 +228,11 @@ const OrderManagement = () => {
 
             setFilteredOrders(ordersToday);
 
+            const validOrdersToday = ordersToday.filter(isValidOrderForRevenue);
+            const todaySales = validOrdersToday.reduce((total, order) =>
+                total + Number(order.totalPrice || 0), 0
+            );
+
             const initialChartData = {
                 labels: [formatDateVN(today)],
                 datasets: [
@@ -198,6 +242,15 @@ const OrderManagement = () => {
                         backgroundColor: 'rgba(53, 162, 235, 0.5)',
                         borderColor: 'rgba(53, 162, 235, 1)',
                         borderWidth: 1,
+                        yAxisID: 'y',
+                    },
+                    {
+                        label: 'Doanh thu',
+                        data: [todaySales],
+                        backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1,
+                        yAxisID: 'y1',
                     }
                 ]
             };
@@ -297,102 +350,126 @@ const OrderManagement = () => {
 
     const handleFilterOrders = () => {
         setDateError('');
-
         if (!startDateISO || !endDateISO) {
             setDateError('Vui lòng chọn ngày bắt đầu và ngày kết thúc');
             return;
         }
-
         const start = new Date(startDateISO);
         start.setHours(0, 0, 0, 0);
-
         const end = new Date(endDateISO);
         end.setHours(0, 0, 0, 0);
-
         if (start > end) {
             setDateError('Ngày bắt đầu không được sau ngày kết thúc');
             return;
         }
-
         const endOfDay = new Date(end);
         endOfDay.setHours(23, 59, 59, 999);
-
         const filtered = orders.filter(order => {
             const orderDate = new Date(order.createdAt);
             return orderDate >= start && orderDate <= endOfDay;
         });
-
         setFilteredOrders(filtered);
-
+        // Tạo mảng ngày
         const dateArray = [];
-        const ordersByDate = {};
-
+        const orderCountByDate = {};
+        const salesByDate = {};
         let currentDate = new Date(start);
         while (currentDate <= end) {
             const dateString = formatDateVN(currentDate);
             dateArray.push(dateString);
-            ordersByDate[dateString] = 0;
-
+            orderCountByDate[dateString] = 0;
+            salesByDate[dateString] = 0;
             currentDate.setDate(currentDate.getDate() + 1);
         }
-
+        // Đếm đơn hàng và tính doanh thu theo ngày
         filtered.forEach(order => {
             const orderDate = new Date(order.createdAt);
             const orderDateString = formatDateVN(orderDate);
+            if (orderCountByDate[orderDateString] !== undefined) {
+                orderCountByDate[orderDateString]++;
 
-            if (ordersByDate[orderDateString] !== undefined) {
-                ordersByDate[orderDateString] += 1;
+                // Chỉ tính doanh thu từ đơn hàng hợp lệ
+                if (isValidOrderForRevenue(order)) {
+                    salesByDate[orderDateString] += Number(order.totalPrice || 0);
+                }
             }
         });
-
+        // Cập nhật biểu đồ
         setChartData({
             labels: dateArray,
             datasets: [
                 {
                     label: 'Số đơn hàng',
-                    data: dateArray.map(date => ordersByDate[date]),
+                    data: dateArray.map(date => orderCountByDate[date]),
                     backgroundColor: 'rgba(53, 162, 235, 0.5)',
                     borderColor: 'rgba(53, 162, 235, 1)',
                     borderWidth: 1,
+                    yAxisID: 'y',
+                },
+                {
+                    label: 'Doanh thu',
+                    data: dateArray.map(date => salesByDate[date]),
+                    backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1,
+                    yAxisID: 'y1',
                 }
             ]
         });
-
-        const minWidth = Math.max(800, dateArray.length * 60);
-        setChartMinWidth(`${minWidth}px`);
+        // Điều chỉnh độ rộng biểu đồ
+        const days = dateArray.length;
+        if (days <= 7) {
+            setChartMinWidth('800px');
+        } else if (days <= 30) {
+            setChartMinWidth('1200px');
+        } else {
+            setChartMinWidth('1600px');
+        }
     };
 
     const chartOptions = {
         responsive: true,
         maintainAspectRatio: false,
-        scales: {
-            x: {
-                grid: {
-                    display: true
-                },
-                ticks: {
-                    maxRotation: 45,
-                    minRotation: 45
-                }
-            },
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    precision: 0,
-                    stepSize: 1
-                }
-            }
-        },
         plugins: {
             legend: {
                 position: 'top',
             },
             title: {
                 display: true,
-                text: 'Số lượng đơn hàng theo ngày',
-                font: {
-                    size: 16
-                }
+                text: 'Thống kê đơn hàng và doanh thu',
+            },
+        },
+        scales: {
+            x: {
+                beginAtZero: true,
+            },
+            y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Số đơn hàng',
+                },
+            },
+            y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Doanh thu (VNĐ)',
+                },
+                ticks: {
+                    callback: function (value) {
+                        return formatter(value);
+                    }
+                },
+                grid: {
+                    drawOnChartArea: false,
+                },
             },
         },
     };
@@ -545,12 +622,18 @@ const OrderManagement = () => {
                         />
                     </div>
 
-                    <div className='self-end mb-1'>
+                    <div className='self-end mb-1 flex gap-2'>
                         <button
                             onClick={handleFilterOrders}
                             className='bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600'
                         >
                             Thống kê
+                        </button>
+                        <button
+                            onClick={handleOpenStatistics}
+                            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md transition-colors"
+                        >
+                            Xem bảng thống kê
                         </button>
                     </div>
                 </div>
@@ -563,7 +646,7 @@ const OrderManagement = () => {
 
                 <div className='h-80 overflow-x-auto'>
                     <div style={{ minWidth: chartMinWidth, height: '100%' }}>
-                        <Bar options={chartOptions} data={chartData} />
+                        <Bar data={chartData} options={chartOptions} />
                     </div>
                 </div>
             </div>
@@ -664,6 +747,16 @@ const OrderManagement = () => {
                 handleStatusChange={handleStatusChange}
                 handlePaymentStatusChange={handlePaymentStatusChange}
                 paymentStatusMap={paymentStatusMap}
+            />
+
+            <StatisticsTable
+                isOpen={statisticsOpen}
+                onClose={() => setStatisticsOpen(false)}
+                startDate={startDateISO}
+                endDate={endDateISO}
+                orders={filteredOrders}
+                totalSales={filteredOrders.reduce((total, order) => total + Number(order.totalPrice || 0), 0)}
+                totalProductsSold={countTotalProductsSold(filteredOrders)}
             />
         </div>
     );

@@ -15,6 +15,7 @@ import {
     Legend,
 } from 'chart.js'
 import DatePickerVN from '../components/Admin/DatePickerVN'
+import StatisticsTable from '../components/Admin/StatisticsTable'
 
 ChartJS.register(
     CategoryScale,
@@ -24,8 +25,6 @@ ChartJS.register(
     Tooltip,
     Legend
 )
-
-
 
 const AdminHome = () => {
     const dispatch = useDispatch();
@@ -45,8 +44,10 @@ const AdminHome = () => {
     const [todayOrders, setTodayOrders] = useState([]);
     const [todaySales, setTodaySales] = useState(0);
     const [todayProductsSold, setTodayProductsSold] = useState(0);
+    const [totalRevenue, setTotalRevenue] = useState(0); // Thêm state cho tổng doanh thu
 
     const [chartMinWidth, setChartMinWidth] = useState('800px');
+    const [showStatisticsTable, setShowStatisticsTable] = useState(false);
 
     const [chartData, setChartData] = useState({
         labels: [],
@@ -78,6 +79,11 @@ const AdminHome = () => {
         dispatch(fetchAdminProducts());
         dispatch(fetchAllOrders());
     }, [dispatch]);
+
+    // Hàm kiểm tra đơn hàng hợp lệ cho doanh thu
+    const isValidOrderForRevenue = (order) => {
+        return order.status === 'Delivered' && order.paymentStatus === 'paid';
+    };
 
     const formatDateVN = (date) => {
         if (!date) return '';
@@ -132,6 +138,13 @@ const AdminHome = () => {
         if (orders && orders.length > 0) {
             logOrderStructure(orders);
 
+            // Tính tổng doanh thu từ TẤT CẢ đơn hàng hợp lệ
+            const allValidOrders = orders.filter(isValidOrderForRevenue);
+            const totalRev = allValidOrders.reduce((total, order) => 
+                total + Number(order.totalPrice || 0), 0
+            );
+            setTotalRevenue(totalRev);
+
             const today = getVNTime();
             today.setHours(0, 0, 0, 0);
 
@@ -141,10 +154,13 @@ const AdminHome = () => {
                 return orderDate.getTime() === today.getTime();
             });
 
-            const sales = ordersToday.reduce((total, order) => total + Number(order.totalPrice || 0), 0);
+            // CHỈ tính đơn hàng đã giao và đã thanh toán
+            const validOrdersToday = ordersToday.filter(isValidOrderForRevenue);
 
-            const productsSold = countTotalProducts(ordersToday);
+            const sales = validOrdersToday.reduce((total, order) => total + Number(order.totalPrice || 0), 0);
+            const productsSold = countTotalProducts(validOrdersToday);
 
+            console.log("Today's valid orders:", validOrdersToday.length);
             console.log("Today's products sold:", productsSold);
 
             setTodayOrders(ordersToday);
@@ -230,13 +246,16 @@ const AdminHome = () => {
             return orderDate >= start && orderDate <= endOfDay;
         });
 
-        const sales = filtered.reduce((total, order) => total + Number(order.totalPrice || 0), 0);
+        // CHỈ tính đơn hàng đã giao và đã thanh toán cho doanh thu
+        const validOrders = filtered.filter(isValidOrderForRevenue);
 
-        const productsSold = countTotalProducts(filtered);
+        const sales = validOrders.reduce((total, order) => total + Number(order.totalPrice || 0), 0);
+        const productsSold = countTotalProducts(validOrders);
 
         const soldProductsMap = {};
 
-        filtered.forEach(order => {
+        // CHỈ tính sản phẩm từ đơn hàng hợp lệ
+        validOrders.forEach(order => {
             const items = order.orderItems || order.items || [];
             if (Array.isArray(items)) {
                 items.forEach(item => {
@@ -264,12 +283,12 @@ const AdminHome = () => {
         const soldProductsList = Object.values(soldProductsMap)
             .sort((a, b) => b.quantity - a.quantity);
 
-        console.log("Chi tiết sản phẩm đã bán:", soldProductsList);
+        console.log("Chi tiết sản phẩm đã bán (chỉ đơn hợp lệ):", soldProductsList);
         setSoldProductsDetails(soldProductsList);
 
-        setFilteredOrders(filtered);
-        setFilteredSales(sales);
-        setFilteredProductsSold(productsSold);
+        setFilteredOrders(filtered); // Vẫn hiển thị tất cả đơn hàng
+        setFilteredSales(sales); // Nhưng chỉ tính doanh thu từ đơn hợp lệ
+        setFilteredProductsSold(productsSold); // Và sản phẩm từ đơn hợp lệ
 
         const dateArray = [];
         const salesByDate = {};
@@ -285,7 +304,8 @@ const AdminHome = () => {
             currentDate.setDate(currentDate.getDate() + 1);
         }
 
-        filtered.forEach(order => {
+        // CHỈ tính từ đơn hàng hợp lệ cho chart
+        validOrders.forEach(order => {
             const orderDate = new Date(order.createdAt);
             const orderDateString = formatDateVN(orderDate);
 
@@ -304,8 +324,8 @@ const AdminHome = () => {
             }
         });
 
-        console.log("Sales by date:", salesByDate);
-        console.log("Products by date:", productsByDate);
+        console.log("Sales by date (valid orders only):", salesByDate);
+        console.log("Products by date (valid orders only):", productsByDate);
 
         setChartData({
             labels: dateArray,
@@ -333,37 +353,31 @@ const AdminHome = () => {
             ]
         });
 
-        const minWidth = Math.max(800, dateArray.length * 60);
-        setChartMinWidth(`${minWidth}px`);
-    };
-
-    const statusLabel = (status) => {
-        switch (status) {
-            case 'Processing':
-                return 'Đang xử lý';
-            case 'Shipped':
-                return 'Đang giao hàng';
-            case 'Delivered':
-                return 'Đã giao';
-            case 'Cancelled':
-                return 'Đã hủy';
-            default:
-                return status;
+        const days = dateArray.length;
+        if (days <= 7) {
+            setChartMinWidth('800px');
+        } else if (days <= 30) {
+            setChartMinWidth('1200px');
+        } else {
+            setChartMinWidth('1600px');
         }
     };
 
     const chartOptions = {
         responsive: true,
         maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
+            },
+            title: {
+                display: true,
+                text: 'Thống kê doanh thu và sản phẩm bán được',
+            },
+        },
         scales: {
             x: {
-                grid: {
-                    display: true
-                },
-                ticks: {
-                    maxRotation: 45,
-                    minRotation: 45
-                }
+                beginAtZero: true,
             },
             y: {
                 type: 'linear',
@@ -372,24 +386,12 @@ const AdminHome = () => {
                 beginAtZero: true,
                 title: {
                     display: true,
-                    text: 'Doanh thu (VND)',
-                    color: 'rgba(53, 162, 235, 1)',
-                    font: {
-                        weight: 'bold'
-                    }
+                    text: 'Doanh thu (VNĐ)',
                 },
                 ticks: {
-                    callback: function (value) {
-                        if (value >= 1000000) {
-                            return (value / 1000000).toLocaleString() + 'M';
-                        } else if (value >= 1000) {
-                            return (value / 1000).toLocaleString() + 'K';
-                        }
-                        return value;
+                    callback: function(value) {
+                        return formatter(value);
                     }
-                },
-                grid: {
-                    color: 'rgba(0, 0, 0, 0.1)',
                 }
             },
             y1: {
@@ -397,228 +399,213 @@ const AdminHome = () => {
                 display: true,
                 position: 'right',
                 beginAtZero: true,
-                min: 0,
-                suggestedMax: 10,
                 title: {
                     display: true,
-                    text: 'Sản phẩm đã bán',
-                    color: 'rgba(255, 99, 132, 1)',
-                    font: {
-                        weight: 'bold'
-                    }
+                    text: 'Số lượng sản phẩm',
                 },
                 grid: {
                     drawOnChartArea: false,
-                }
-            }
-        },
-        plugins: {
-            legend: {
-                position: 'top',
+                },
             },
-            title: {
-                display: true,
-                text: 'Biểu đồ doanh thu theo ngày',
-                font: {
-                    size: 16
-                }
-            },
-            tooltip: {
-                callbacks: {
-                    label: function (context) {
-                        let label = context.dataset.label || '';
-                        if (label) {
-                            label += ': ';
-                        }
-
-                        if (context.dataset.yAxisID === 'y') {
-                            label += formatter(context.parsed.y);
-                        } else {
-                            label += context.parsed.y + ' sản phẩm';
-                        }
-
-                        return label;
-                    }
-                }
-            }
         },
     };
 
+    if (productsLoading || ordersLoading) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+            </div>
+        );
+    }
+
+    if (productsError || ordersError) {
+        return (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                Lỗi: {productsError || ordersError}
+            </div>
+        );
+    }
+
     return (
-        <div className='max-w-7xl mx-auto p-6'>
-            <h1 className='text-3xl font-bold mb-6'>Giao diện quản lý</h1>
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <h1 className="text-3xl font-bold text-gray-900">Trang quản trị</h1>
+            </div>
 
-            {productsLoading || ordersLoading ? (
-                <p>Đang tải...</p>
-            ) : productsError ? (
-                <p className='text-red-500'>Lỗi khi lấy sản phẩm: {productsError}</p>
-            ) : ordersError ? (
-                <p className='text-red-500'>Lỗi khi lấy đơn hàng: {ordersError}</p>
-            ) : (
-                <>
-                    <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8'>
-                        <div className='p-4 shadow-md rounded-lg bg-white'>
-                            <h2 className='text-xl font-semibold'>Doanh thu hôm nay</h2>
-                            <p className='text-2xl'>{formatter(todaySales)}</p>
+            {/* Thống kê tổng quan */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+                <div className="bg-white rounded-lg shadow-md p-6">
+                    <div className="flex items-center">
+                        <div className="text-blue-500">
+                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                            </svg>
                         </div>
-                        <div className='p-4 shadow-md rounded-lg bg-white'>
-                            <h2 className='text-xl font-semibold'>Đơn hàng hôm nay</h2>
-                            <p className='text-2xl'>{todayOrders.length}</p>
-                            <Link to="/admin/orders"
-                                className='text-blue-500 hover:underline'>
-                                Quản lý đơn hàng
-                            </Link>
-                        </div>
-                        <div className='p-4 shadow-md rounded-lg bg-white'>
-                            <h2 className='text-xl font-semibold'>Sản phẩm đã bán hôm nay</h2>
-                            <p className='text-2xl'>{todayProductsSold}</p>
-                        </div>
-                        <div className='p-4 shadow-md rounded-lg bg-white'>
-                            <h2 className='text-xl font-semibold'>Tổng số sản phẩm</h2>
-                            <p className='text-2xl'>{products.length}</p>
-                            <Link to="/admin/products"
-                                className='text-blue-500 hover:underline'>
-                                Quản lý sản phẩm
-                            </Link>
+                        <div className="ml-4">
+                            <p className="text-sm font-medium text-gray-600">Tổng sản phẩm</p>
+                            <p className="text-2xl font-semibold text-gray-900">{products?.length || 0}</p>
                         </div>
                     </div>
+                </div>
 
-                    <div className='bg-white p-4 shadow-md rounded-lg mb-8'>
-                        <h2 className='text-xl font-semibold mb-4'>Thống kê theo khoảng thời gian</h2>
-
-                        {dateError && (
-                            <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded-md">
-                                {dateError}
-                            </div>
-                        )}
-
-                        <div className='flex flex-wrap items-center gap-4'>
-                            <div>
-                                <label className='block text-sm font-medium text-gray-700 mb-1'>Từ ngày</label>
-                                <DatePickerVN
-                                    value={toVNFormat(startDateISO)}
-                                    onChange={handleStartDateChange}
-                                />
-                            </div>
-
-                            <div>
-                                <label className='block text-sm font-medium text-gray-700 mb-1'>Đến ngày</label>
-                                <DatePickerVN
-                                    value={toVNFormat(endDateISO)}
-                                    onChange={handleEndDateChange}
-                                />
-                            </div>
-
-                            <div className='self-end mb-1'>
-                                <button
-                                    onClick={handleFilterOrders}
-                                    className='bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600'
-                                >
-                                    Thống kê
-                                </button>
-                            </div>
+                <div className="bg-white rounded-lg shadow-md p-6">
+                    <div className="flex items-center">
+                        <div className="text-green-500">
+                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
                         </div>
-
-                        <div className='mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4'>
-                            <div className='bg-gray-50 p-3 rounded-md border'>
-                                <p className='text-lg font-semibold'>
-                                    Tổng doanh thu: <span className='text-blue-600'>{formatter(filteredSales)}</span>
-                                </p>
-                            </div>
-                            <div className='bg-gray-50 p-3 rounded-md border'>
-                                <p className='text-lg font-semibold'>
-                                    Số đơn hàng: <span className='text-blue-600'>{filteredOrders.length}</span>
-                                </p>
-                                <Link
-                                    to="/admin/orders"
-                                    state={{
-                                        filterDates: {
-                                            start: startDateISO,
-                                            end: endDateISO
-                                        }
-                                    }}
-                                    className="mt-2 text-sm text-indigo-600 hover:text-indigo-800 inline-flex items-center"
-                                >
-                                    <span>Xem chi tiết đơn hàng</span>
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                    </svg>
-                                </Link>
-                            </div>
-                            <div className='bg-gray-50 p-3 rounded-md border'>
-                                <p className='text-lg font-semibold'>
-                                    Sản phẩm đã bán: <span className='text-rose-600'>{filteredProductsSold}</span>
-                                </p>
-                                <Link
-                                    to={`/admin/products`}
-                                    state={{ filterDates: { start: startDateISO, end: endDateISO } }}
-                                    className="mt-2 text-sm text-indigo-600 hover:text-indigo-800 inline-flex items-center"
-                                >
-                                    <span>Xem chi tiết</span>
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                    </svg>
-                                </Link>
-                            </div>
-                        </div>
-
-                        <div className='mt-6 h-96 overflow-x-auto'>
-                            <div style={{ minWidth: chartMinWidth, height: '100%' }}>
-                                <Bar options={chartOptions} data={chartData} />
-                            </div>
+                        <div className="ml-4">
+                            <p className="text-sm font-medium text-gray-600">Tổng đơn hàng</p>
+                            <p className="text-2xl font-semibold text-gray-900">{orders?.length || 0}</p>
                         </div>
                     </div>
+                </div>
 
-                    {/* <div className='bg-white p-4 shadow-md rounded-lg'>
-                        <h2 className='text-2xl font-bold mb-4'>Danh sách đơn hàng</h2>
-                        <div className='overflow-x-auto'>
-                            <table className='min-w-full text-left text-gray-500'>
-                                <thead className='bg-gray-100 text-xs uppercase text-gray-700'>
-                                    <tr>
-                                        <th className='py-3 px-4'>Mã đơn hàng</th>
-                                        <th className='py-3 px-4'>Khách hàng</th>
-                                        <th className='py-3 px-4'>Ngày tạo</th>
-                                        <th className='py-3 px-4'>Tổng đơn giá</th>
-                                        <th className='py-3 px-4'>Số sản phẩm</th>
-                                        <th className='py-3 px-4'>Trạng thái</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredOrders.length > 0 ? (
-                                        filteredOrders.map((order) => {
-                                            let productCount = 0;
-                                            if (order.orderItems && Array.isArray(order.orderItems)) {
-                                                productCount = order.orderItems.reduce((total, item) =>
-                                                    total + (parseInt(item.quantity) || 0), 0);
-                                            } else if (order.items && Array.isArray(order.items)) {
-                                                productCount = order.items.reduce((total, item) =>
-                                                    total + (parseInt(item.quantity) || 0), 0);
-                                            }
-
-                                            return (
-                                                <tr key={order._id}
-                                                    className='border-b hover:bg-gray-50 cursor-pointer'>
-                                                    <td className='p-4'>{order._id}</td>
-                                                    <td className='p-4'>{order.user ? order.user.name : 'N/A'}</td>
-                                                    <td className='p-4'>{formatDateVN(order.createdAt)}</td>
-                                                    <td className='p-4'>{formatter(order.totalPrice)}</td>
-                                                    <td className='p-4'>{productCount}</td>
-                                                    <td className='p-4'>{statusLabel(order.status)}</td>
-                                                </tr>
-                                            );
-                                        })
-                                    ) : (
-                                        <tr>
-                                            <td colSpan={6} className='p-4 text-center text-gray-500'>
-                                                Không có đơn hàng nào trong khoảng thời gian này.
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
+                <div className="bg-white rounded-lg shadow-md p-6">
+                    <div className="flex items-center">
+                        <div className="ml-4">
+                            <p className="text-sm font-medium text-gray-600">Tổng doanh thu</p>
+                            <p className="text-2xl font-semibold text-gray-900">{formatter(totalRevenue)}</p>
                         </div>
-                    </div> */}
-                </>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-md p-6">
+                    <div className="flex items-center">
+                        <div className="ml-4">
+                            <p className="text-sm font-medium text-gray-600">Doanh thu hôm nay</p>
+                            <p className="text-2xl font-semibold text-gray-900">{formatter(todaySales)}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-md p-6">
+                    <div className="flex items-center">
+                        <div className="text-purple-500">
+                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                            </svg>
+                        </div>
+                        <div className="ml-4">
+                            <p className="text-sm font-medium text-gray-600">Sản phẩm bán hôm nay</p>
+                            <p className="text-2xl font-semibold text-gray-900">{todayProductsSold}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Lọc theo ngày */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Lọc theo ngày</h2>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <div>
+                        <DatePickerVN
+                            label="Từ ngày (DD/MM/YYYY)"
+                            value={startDateISO}
+                            onChange={handleStartDateChange}
+                        />
+                    </div>
+                    <div>
+                        <DatePickerVN
+                            label="Đến ngày (DD/MM/YYYY)"
+                            value={endDateISO}
+                            onChange={handleEndDateChange}
+                        />
+                    </div>
+                    <button
+                        onClick={handleFilterOrders}
+                        className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        Thống kê
+                    </button>
+                    <button
+                        onClick={() => setShowStatisticsTable(true)}
+                        className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                        Xem bảng thống kê
+                    </button>
+                </div>
+                {dateError && (
+                    <div className="mt-2 text-red-600 text-sm">
+                        {dateError}
+                    </div>
+                )}
+            </div>
+
+            {/* Thống kê trong khoảng thời gian đã chọn */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white rounded-lg shadow-md p-6">
+                    <div className="flex items-center">
+                        <div className="text-blue-500">
+                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <div className="ml-4">
+                            <p className="text-sm font-medium text-gray-600">
+                                Khoảng thời gian
+                            </p>
+                            <p className="text-lg font-semibold text-gray-900">
+                                {startDateISO && endDateISO ? 
+                                    `${toVNFormat(startDateISO)} - ${toVNFormat(endDateISO)}` : 
+                                    'Chưa chọn'
+                                }
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-md p-6">
+                    <div className="flex items-center">
+                        <div className="ml-4">
+                            <p className="text-sm font-medium text-gray-600">Doanh thu</p>
+                            <p className="text-2xl font-semibold text-gray-900">{formatter(filteredSales)}</p>
+                            <p className="text-xs text-blue-600 cursor-pointer">Xem chi tiết →</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-md p-6">
+                    <div className="flex items-center">
+                        <div className="text-purple-500">
+                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                            </svg>
+                        </div>
+                        <div className="ml-4">
+                            <p className="text-sm font-medium text-gray-600">Sản phẩm đã bán</p>
+                            <p className="text-2xl font-semibold text-gray-900">{filteredProductsSold}</p>
+                            <p className="text-xs text-blue-600 cursor-pointer">Xem chi tiết →</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Biểu đồ thống kê */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Biểu đồ thống kê</h2>
+                <p className="text-sm text-gray-600 mb-4">
+                    Thống kê doanh thu và sản phẩm bán được
+                </p>
+                <div className="overflow-x-auto">
+                    <div style={{ minWidth: chartMinWidth, height: '400px' }}>
+                        <Bar data={chartData} options={chartOptions} />
+                    </div>
+                </div>
+            </div>
+
+            {/* Bảng thống kê chi tiết */}
+            {showStatisticsTable && (
+                <StatisticsTable
+                    isOpen={showStatisticsTable}
+                    onClose={() => setShowStatisticsTable(false)}
+                    orders={filteredOrders.filter(isValidOrderForRevenue)}
+                    startDate={startDateISO}
+                    endDate={endDateISO}
+                    totalSales={filteredSales}
+                    totalProductsSold={filteredProductsSold}
+                />
             )}
         </div>
     )

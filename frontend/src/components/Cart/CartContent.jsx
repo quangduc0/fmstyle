@@ -46,14 +46,14 @@ const CartContent = ({ cart, userId, guestId }) => {
     };
 
     const getDaysRemaining = (addedAt) => {
-        if (!addedAt) return 1; // Có thể thay đổi ngày muốn xóa
+        if (!addedAt) return 5;
         
         const added = new Date(addedAt);
         const now = new Date();
         const diffTime = now - added;
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
         
-        return Math.max(0, 1 - diffDays); // Có thể thay đổi ngày muốn xóa
+        return Math.max(0, 5 - diffDays);
     };
 
     const getExpirationColor = (daysRemaining) => {
@@ -70,14 +70,14 @@ const CartContent = ({ cart, userId, guestId }) => {
                 
                 return (
                     <div key={index} className='flex items-start justify-between py-4 border-b'>
-                        <div className='flex items-start '>
-                            <img src={product.image} alt={product.name} className='w-20 h-24 object-cover mr-4 rounded' />
-                            <div>
-                                <h3>{product.name}</h3>
-                                <p className='text-sm text-gray-500'>
+                        <div className='flex items-start flex-1'>
+                            <img src={product.image} alt={product.name} className='w-20 h-24 object-cover mr-4 rounded flex-shrink-0' />
+                            <div className='flex-1 min-w-0'>
+                                <h3 className='font-medium text-gray-900 mb-2 pr-4'>{product.name}</h3>
+                                <p className='text-sm text-gray-500 mb-1'>
                                     Cỡ: {product.size} | Màu: {getVietnameseColor(product.color) || product.color}
                                 </p>
-                                <p className={`text-xs ${expirationColorClass}`}>
+                                <p className={`text-xs mb-3 ${expirationColorClass}`}>
                                     {daysRemaining > 0 ? (
                                         daysRemaining === 1 ? 
                                         "Hết hạn sau 1 ngày" : 
@@ -86,25 +86,30 @@ const CartContent = ({ cart, userId, guestId }) => {
                                         "Sắp hết hạn"
                                     )}
                                 </p>
-                                <div className='flex items-center mt-2'>
+                                <div className='flex items-center'>
                                     <button
                                         onClick={() => handleAddToCart(product.productId, -1, product.quantity, product.size, product.color)}
-                                        className='border rounded px-2 py-1 text-xl font-medium'>
+                                        className='border rounded px-2 py-1 text-xl font-medium hover:bg-gray-50'>
                                         -
                                     </button>
-                                    <span className='mx-4'>{product.quantity}</span>
+                                    <span className='mx-4 min-w-[2rem] text-center'>{product.quantity}</span>
                                     <button
                                         onClick={() => handleAddToCart(product.productId, 1, product.quantity, product.size, product.color)}
-                                        className='border rounded px-2 py-1 text-xl font-medium'>
+                                        className='border rounded px-2 py-1 text-xl font-medium hover:bg-gray-50'>
                                         +
                                     </button>
                                 </div>
                             </div>
                         </div>
-                        <div>
-                            <p>{formatter(product.price)}</p>
-                            <button onClick={() => handleRemoveFromCart(product.productId, product.size, product.color)}>
-                                <RiDeleteBin3Line className='h-6 w-6 mt-2 text-red-600' />
+                        
+                        {/* Phần giá và nút xóa */}
+                        <div className='flex flex-col items-end justify-between h-24 ml-4 flex-shrink-0'>
+                            <p className='font-semibold text-gray-900'>{formatter(product.price * product.quantity)}</p>
+                            <button 
+                                onClick={() => handleRemoveFromCart(product.productId, product.size, product.color)}
+                                className='p-1 hover:bg-red-50 rounded transition-colors duration-200'
+                            >
+                                <RiDeleteBin3Line className='h-5 w-5 text-red-600' />
                             </button>
                         </div>
                     </div>

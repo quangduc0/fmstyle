@@ -233,7 +233,7 @@ const Checkout = () => {
                                     <p className='text-gray-500'>Số lượng: {product.quantity}</p>
                                 </div>
                             </div>
-                            <p className='text-xl'>{formatter(product.price)}</p>
+                            <p className='text-xl'>{formatter(product.price * product.quantity)}</p>
                         </div>
                     ))}
                 </div>

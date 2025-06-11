@@ -29,13 +29,6 @@ const AdminSidebar = () => {
                     <FaUser />
                     <span>Người dùng</span>
                 </NavLink>
-                <NavLink to="/admin/products/add"
-                    className={({ isActive }) => isActive
-                        ? "bg-gray-700 text-white py-3 px-4 rounded flex items-center space-x-2"
-                        : "text-gray-300 hover:bg-gray-700 hover:text-white py-3 px-4 rounded flex items-center space-x-2"}>
-                    <FaPlus />
-                    <span>Thêm sản phẩm</span>
-                </NavLink>
                 <NavLink to="/admin/products"
                     className={({ isActive }) => isActive
                         ? "bg-gray-700 text-white py-3 px-4 rounded flex items-center space-x-2"

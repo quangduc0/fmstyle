@@ -51,10 +51,10 @@ const OrderDetails = () => {
                     </div>
                 </div>
 
-                <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 mb-8'>
+                <div className='grid grid-cols-1 sm:grid-cols-3 md:grid-cols-3 gap-8 mb-8'>
                     <div>
                         <h4 className='text-lg font-semibold mb-2'>Thông tin giao dịch</h4>
-                        <p>Phương thức thanh toán: {
+                        <p>Thanh toán: {
                             orderDetails.paymentMethod === "cod" 
                                 ? "Thanh toán khi giao hàng" 
                                 : orderDetails.paymentMethod
@@ -74,6 +74,12 @@ const OrderDetails = () => {
                         <p>Địa chỉ: {`${orderDetails.shippingAddress.address}`}</p>
                         <p>Thành phố: {`${orderDetails.shippingAddress.city}`}</p>
                         <p>Quốc gia: {`${orderDetails.shippingAddress.country}`}</p>
+                    </div>
+                    <div>
+                        <h4 className='text-lg font-semibold mb-2'>Thông tin khách hàng</h4>
+                        <p> {`${orderDetails.shippingAddress.lastName}`} {`${orderDetails.shippingAddress.firstName}`}</p>
+                        <p>Số điện thoại: {`${orderDetails.shippingAddress.phone}`}</p>
+                        <p>Mã bưu chính: {`${orderDetails.shippingAddress.postalCode}`}</p>
                     </div>
                 </div>
 

@@ -5,6 +5,8 @@ import { useDispatch, useSelector } from 'react-redux'
 import { deleteProduct, fetchAdminProducts } from '../../redux/slices/adminProductSlice'
 import { fetchAllOrders } from '../../redux/slices/adminOrderSlice'
 import DatePickerVN from './DatePickerVN'
+import StatisticsTable from './StatisticsTable';
+import { FaPlus } from 'react-icons/fa'
 
 const ProductManagement = () => {
     const dispatch = useDispatch();
@@ -42,6 +44,8 @@ const ProductManagement = () => {
     const [displayedProducts, setDisplayedProducts] = useState([]);
     const [modalTitle, setModalTitle] = useState('');
     const [showAllProducts, setShowAllProducts] = useState(true);
+
+    const [statisticsOpen, setStatisticsOpen] = useState(false);
 
     useEffect(() => {
         dispatch(fetchAdminProducts());
@@ -133,6 +137,27 @@ const ProductManagement = () => {
         const month = (date.getMonth() + 1).toString().padStart(2, '0');
         const year = date.getFullYear();
         return `${day}/${month}/${year}`;
+    };
+
+    const countTotalProductsSold = (orderArray) => {
+        return orderArray.reduce((total, order) => {
+            if (order.orderItems && Array.isArray(order.orderItems)) {
+                return total + order.orderItems.reduce((itemTotal, item) =>
+                    itemTotal + (parseInt(item.quantity) || 0), 0);
+            }
+            else if (order.items && Array.isArray(order.items)) {
+                return total + order.items.reduce((itemTotal, item) =>
+                    itemTotal + (parseInt(item.quantity) || 0), 0);
+            }
+            return total;
+        }, 0);
+    };
+    const handleOpenStatistics = () => {
+        if (!startDateISO || !endDateISO) {
+            setDateError('Vui lòng chọn ngày bắt đầu và ngày kết thúc trước khi xem thống kê');
+            return;
+        }
+        setStatisticsOpen(true);
     };
 
     const handleStartDateChange = (value) => {
@@ -324,7 +349,16 @@ const ProductManagement = () => {
 
             {/* Phần thống kê sản phẩm */}
             <div className="mb-8">
-                <h3 className="text-xl font-semibold mb-4">Thống kê sản phẩm</h3>
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-semibold">Thống kê sản phẩm</h3>
+                    <Link
+                        to="/admin/products/add"
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium transition flex items-center space-x-2"
+                    >
+                        <FaPlus/> 
+                        <span>Thêm sản phẩm</span>
+                    </Link>
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     {/* Thống kê theo trạng thái tồn kho */}
@@ -383,7 +417,7 @@ const ProductManagement = () => {
                 </div>
 
                 {/* Top sản phẩm bán chạy */}
-                <div className="mb-6 p-4 border rounded-lg">
+                {/* <div className="mb-6 p-4 border rounded-lg">
                     <h4 className="text-lg font-medium mb-3">Top 5 sản phẩm bán chạy</h4>
                     {topSellingProducts.length > 0 ? (
                         <div className="overflow-x-auto">
@@ -419,7 +453,7 @@ const ProductManagement = () => {
                     ) : (
                         <div className="text-center py-4 text-gray-500">Không có dữ liệu bán hàng</div>
                     )}
-                </div>
+                </div> */}
 
                 {/* Thống kê sản phẩm bán trong khoảng thời gian */}
                 <div className="mb-6 p-4 border rounded-lg">
@@ -441,12 +475,18 @@ const ProductManagement = () => {
                                 placeholder="DD/MM/YYYY"
                             />
                         </div>
-                        <div className="flex items-end">
+                        <div className="self-end mb-1 flex gap-2">
                             <button
                                 onClick={() => handleFilterSoldProducts(false)}
                                 className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
                             >
                                 Lọc
+                            </button>
+                            <button
+                                onClick={handleOpenStatistics}
+                                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md transition-colors"
+                            >
+                                Xem bảng
                             </button>
                         </div>
                     </div>
@@ -506,10 +546,10 @@ const ProductManagement = () => {
                                     <td className='p-4'>{formatter(product.price)}</td>
                                     <td className='p-4'>
                                         <span className={`px-2 py-1 rounded ${product.countInStock > 10
-                                                ? 'bg-green-100 text-green-800'
-                                                : product.countInStock > 0
-                                                    ? 'bg-yellow-100 text-yellow-800'
-                                                    : 'bg-red-100 text-red-800'
+                                            ? 'bg-green-100 text-green-800'
+                                            : product.countInStock > 0
+                                                ? 'bg-yellow-100 text-yellow-800'
+                                                : 'bg-red-100 text-red-800'
                                             }`}>
                                             {product.countInStock}
                                         </span>
@@ -546,6 +586,29 @@ const ProductManagement = () => {
                     </table>
                 </div>
             </div>
+            <StatisticsTable
+                isOpen={statisticsOpen}
+                onClose={() => setStatisticsOpen(false)}
+                startDate={startDateISO}
+                endDate={endDateISO}
+                orders={soldProductsInRange.length > 0 ? orders.filter(order => {
+                    const orderDate = new Date(order.createdAt);
+                    const start = new Date(startDateISO);
+                    start.setHours(0, 0, 0, 0);
+                    const end = new Date(endDateISO);
+                    end.setHours(23, 59, 59, 999);
+                    return orderDate >= start && orderDate <= end;
+                }) : []}
+                totalSales={soldProductsInRange.length > 0 ? orders.filter(order => {
+                    const orderDate = new Date(order.createdAt);
+                    const start = new Date(startDateISO);
+                    start.setHours(0, 0, 0, 0);
+                    const end = new Date(endDateISO);
+                    end.setHours(23, 59, 59, 999);
+                    return orderDate >= start && orderDate <= end;
+                }).reduce((total, order) => total + Number(order.totalPrice || 0), 0) : 0}
+                totalProductsSold={soldProductsInRange.reduce((total, product) => total + (product.soldInPeriod || 0), 0)}
+            />
         </div>
     )
 }

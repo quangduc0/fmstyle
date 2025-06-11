@@ -25,7 +25,7 @@ router.post("/", upload.single("image"), async (req, res) => {
 
         const streamUpload = (fileBuffer) => {
             return new Promise((resolve, reject) => {
-                const stream = cloudinary.uploader.upload_stream((error, result) => {
+                const stream = cloudinary.uploader.upload_stream({folder: "upload image"},(error, result) => {
                     if (result) {
                         resolve(result);
                     } else {

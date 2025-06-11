@@ -37,15 +37,15 @@ const Home = () => {
       <Hero />
       <GenderCollectonSection />
       <NewArrivals />
-      <h2 className='text-3xl text-center font-bold mb-4'>Bán Chạy Nhất</h2>
+      {/* <h2 className='text-3xl text-center font-bold mb-4'>Bán Chạy Nhất</h2>
       {bestSellerProduct ? (<ProductDetails productId={bestSellerProduct._id} />) : (
         <p className='text-center'>Đang tải sản phẩm bán chạy nhất ...</p>
-      )}
+      )} */}
 
 
       <div className='container mx-auto'>
         <h2 className='text-3xl text-center font-bold mb-4'>
-          Thời Trang Hàng Đầu Cho Nữ
+          Xu Hướng Nữ Hot Nhất
         </h2>
         <ProductGrid products={products} loading={loading} error={error} />
       </div>
